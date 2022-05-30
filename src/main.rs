@@ -8,8 +8,10 @@ use codegen::context::CompilerContext;
 
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
-use llvm_sys::target::LLVMIntPtrTypeInContext;
 use std::ptr;
+use lalrpop_util::lalrpop_mod;
+
+lalrpop_mod!(pub grammar);
 
 #[macro_export]
 macro_rules! c_str {
@@ -214,4 +216,18 @@ fn main() {
         LLVMContextDispose(context);
     }
     */
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::grammar;
+
+    #[test]
+    fn term_parse() {
+        assert!(grammar::ExprParser::new().parse("22").is_ok());
+        assert!(grammar::ExprParser::new().parse("(22)").is_ok());
+        assert!(grammar::ExprParser::new().parse("((((22))))").is_ok());
+        assert!(grammar::ExprParser::new().parse("((22)").is_err());
+        assert!(grammar::ExprParser::new().parse("22 + 6 * 3").unwrap() == 40);
+    }
 }
