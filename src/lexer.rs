@@ -1,6 +1,7 @@
 use logos::Logos;
+use std::ops::Range;
 
-#[derive(Logos, Debug)]
+#[derive(Logos, Clone, Debug, PartialEq)]
 pub enum Token<'a> {
     #[regex(r#""([^"\\]|\\.)*""#)]
     StringLiteral(&'a str),
@@ -164,9 +165,6 @@ pub enum Token<'a> {
     #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]+"#)]
     Ident(&'a str),
 
-    #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]+!"#)]
-    Builtin(&'a str),
-
     #[regex(r#"-?[0-9]+"#)]
     IntLiteral(&'a str),
 
@@ -176,3 +174,18 @@ pub enum Token<'a> {
     #[error]
     Error,
 }
+
+impl<'a> Token<'a> {
+    pub fn to_lalr_triple(
+        (t, r): (Token<'a>, Range<usize>),
+    ) -> Result<(usize, Token, usize), Error> {
+        if t == Token::Error {
+            Err(Error {})
+        } else {
+            Ok((r.start, t, r.end))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Error;

@@ -1,14 +1,16 @@
 use llvm_sys::prelude::LLVMValueRef;
 use std::collections::HashMap;
 
+use super::symbol::ScopedSymbolTable;
+
 pub struct CompilerContext {
-    named_values: HashMap<String, LLVMValueRef>,
+    symbols: ScopedSymbolTable,
 }
 
 impl CompilerContext {
     pub fn new() -> Self {
         Self {
-            named_values: HashMap::new(),
+            symbols: ScopedSymbolTable::new(),
         }
     }
 }

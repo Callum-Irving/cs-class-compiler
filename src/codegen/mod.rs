@@ -1,4 +1,5 @@
 pub mod context;
+mod symbol;
 
 use crate::c_str;
 
@@ -14,6 +15,10 @@ pub trait Codegen {
         module: *mut LLVMModule,
         builder: *mut LLVMBuilder,
     ) -> LLVMValueRef;
+}
+
+pub enum CodegenError {
+    EmptySymbolTable,
 }
 
 pub struct Int32Expr(pub i32);

@@ -1,6 +1,26 @@
+use crate::lexer;
+
 use std::str::FromStr;
 
-grammar;
+grammar<'input>;
+
+extern {
+    type Location = usize;
+    type Error = lexer::Error;
+
+    enum lexer::Token<'input> {
+        string => lexer::Token::StringLiteral(<&'input str>),
+        int => lexer::Token::IntLiteral(<&'input str>),
+        ident => lexer::Token::Ident(<&'input str>),
+        newline => lexer::Token::Newline,
+        "+" => lexer::Token::Plus,
+        "-" => lexer::Token::Minus,
+        "*" => lexer::Token::Times,
+        "/" => lexer::Token::Divide,
+        "(" => lexer::Token::LParen,
+        ")" => lexer::Token::RParen,
+    }
+}
 
 pub Expr: i32 = {
     <l:Expr> "+" <r:Factor> => l + r,
@@ -15,8 +35,6 @@ Factor: i32 = {
 }
 
 Term: i32 = {
-    <Num>,
+    <int> => i32::from_str(<>).unwrap(),
     "(" <Term> ")",
 }
-
-Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();
