@@ -1,6 +1,66 @@
+use crate::lexer;
+use crate::ast;
+
 use std::str::FromStr;
 
-grammar;
+grammar<'input>;
+
+extern {
+    type Location = usize;
+    type Error = lexer::Error;
+
+    enum lexer::Token<'input> {
+        string => lexer::Token::StringLiteral(<&'input str>),
+        int => lexer::Token::IntLiteral(<&'input str>),
+        ident => lexer::Token::Ident(<&'input str>),
+        newline => lexer::Token::Newline,
+
+        "const" => lexer::Token::Const,
+        "var" => lexer::Token::Var,
+
+        "(" => lexer::Token::LParen,
+        ")" => lexer::Token::RParen,
+        ":" => lexer::Token::Colon,
+        ";" => lexer::Token::Semicolon,
+        "=" => lexer::Token::Equals,
+
+        // Math
+        "+" => lexer::Token::Plus,
+        "-" => lexer::Token::Minus,
+        "*" => lexer::Token::Times,
+        "/" => lexer::Token::Divide,
+
+        // Types
+        "int" => lexer::Token::Int,
+        "int8" => lexer::Token::Int8,
+        "int16" => lexer::Token::Int16,
+        "int32" => lexer::Token::Int32,
+        "int64" => lexer::Token::Int64,
+        "uint" => lexer::Token::UInt,
+        "uint8" => lexer::Token::UInt8,
+        "uint16" => lexer::Token::UInt16,
+        "uint32" => lexer::Token::UInt32,
+        "uint64" => lexer::Token::UInt64,
+    }
+}
+
+ConstDef: ast::ConstDef =
+    "const" <binding:TypeBinding> "=" <value:Int32Lit> => ast::ConstDef{ <> };
+
+VarDef: ast::VarDef =
+    "var" <binding:TypeBinding> "=" <value:Int32Lit> => ast::VarDef { <> };
+
+TypeBinding: ast::TypeBinding =
+    <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, value_type: t};
+
+Type: ast::Type = {
+    "int" => ast::Type::Int,
+    "uint" => ast::Type::UInt,
+}
+
+Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());
+
+Int32Lit = <int> => i32::from_str(<>).unwrap();
 
 pub Expr: i32 = {
     <l:Expr> "+" <r:Factor> => l + r,
@@ -15,8 +75,6 @@ Factor: i32 = {
 }
 
 Term: i32 = {
-    <Num>,
+    <int> => i32::from_str(<>).unwrap(),
     "(" <Term> ")",
 }
-
-Num: i32 = r"[0-9]+" => i32::from_str(<>).unwrap();

@@ -1,3 +1,4 @@
+mod ast;
 mod codegen;
 mod expr;
 mod lexer;
@@ -7,6 +8,9 @@ use codegen::context::CompilerContext;
 use codegen::*;
 
 use lalrpop_util::lalrpop_mod;
+use lexer::Token;
+use logos::Logos;
+
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use std::ptr;
@@ -222,14 +226,20 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::grammar;
+    use logos::Logos;
+
+    use crate::{grammar, lexer::Token};
 
     #[test]
     fn term_parse() {
-        assert!(grammar::ExprParser::new().parse("22").is_ok());
-        assert!(grammar::ExprParser::new().parse("(22)").is_ok());
-        assert!(grammar::ExprParser::new().parse("((((22))))").is_ok());
-        assert!(grammar::ExprParser::new().parse("((22)").is_err());
-        assert!(grammar::ExprParser::new().parse("22 + 6 * 3").unwrap() == 40);
+        let lex = Token::lexer("((22))").spanned().map(Token::to_lalr_triple);
+        assert!(grammar::ExprParser::new().parse(lex).is_ok());
+        // assert!(grammar::ExprParser::new().parse("(22)").is_ok());
+        // assert!(grammar::ExprParser::new().parse("((((22))))").is_ok());
+        // assert!(grammar::ExprParser::new().parse("((22)").is_err());
+        let lex = Token::lexer("22 + 6 * 3")
+            .spanned()
+            .map(Token::to_lalr_triple);
+        assert!(grammar::ExprParser::new().parse(lex).unwrap() == 40);
     }
 }
