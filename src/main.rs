@@ -3,13 +3,13 @@ mod expr;
 mod lexer;
 mod parser;
 
-use codegen::*;
 use codegen::context::CompilerContext;
+use codegen::*;
 
+use lalrpop_util::lalrpop_mod;
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use std::ptr;
-use lalrpop_util::lalrpop_mod;
 
 lalrpop_mod!(pub grammar);
 
@@ -68,7 +68,8 @@ fn main() {
         };
 
         // Main function
-        let main_fn_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
+        // let main_fn_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
+        let main_fn_type = LLVMFunctionType(i32_type, ptr::null_mut(), 0, 0);
         let main_fn = LLVMAddFunction(module, c_str!("main"), main_fn_type);
         let main_block = LLVMAppendBasicBlockInContext(context, main_fn, c_str!(""));
         LLVMPositionBuilderAtEnd(builder, main_block);
@@ -84,7 +85,8 @@ fn main() {
             c_str!(""),
         );
 
-        LLVMBuildRetVoid(builder);
+        // LLVMBuildRetVoid(builder);
+        LLVMBuildRet(builder, LLVMConstInt(i32_type, 0, 0));
 
         // Write the bitcode to a file
         LLVMPrintModuleToFile(module, c_str!("main.ll"), ptr::null_mut());
