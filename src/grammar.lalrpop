@@ -45,36 +45,65 @@ extern {
 }
 
 ConstDef: ast::ConstDef =
-    "const" <binding:TypeBinding> "=" <value:Int32Lit> => ast::ConstDef{ <> };
+    "const" <binding:TypeBinding> "=" <value:Expr> => ast::ConstDef{ <> };
 
 VarDef: ast::VarDef =
-    "var" <binding:TypeBinding> "=" <value:Int32Lit> => ast::VarDef { <> };
+    "var" <binding:TypeBinding> "=" <value:Expr> => ast::VarDef { <> };
 
 TypeBinding: ast::TypeBinding =
     <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, value_type: t};
 
 Type: ast::Type = {
     "int" => ast::Type::Int,
+    "int8" => ast::Type::Int8,
+    "int16" => ast::Type::Int16,
+    "int32" => ast::Type::Int32,
+    "int64" => ast::Type::Int64,
     "uint" => ast::Type::UInt,
+    "uint8" => ast::Type::UInt8,
+    "uint16" => ast::Type::UInt16,
+    "uint32" => ast::Type::UInt32,
+    "uint64" => ast::Type::UInt64,
 }
 
-Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());
-
-Int32Lit = <int> => i32::from_str(<>).unwrap();
-
-pub Expr: i32 = {
-    <l:Expr> "+" <r:Factor> => l + r,
-    <l:Expr> "-" <r:Factor> => l - r,
-    Factor,
+pub Expr: ast::Expr = {
+    <ArithmaticExpr>,
 }
 
-Factor: i32 = {
-    <l:Factor> "*" <r:Term> => l * r,
-    <l:Factor> "/" <r:Term> => l / r,
+ArithmaticExpr: ast::Expr = {
+    <l:ArithmaticExpr> <op:AddOp> <r:Term> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
     Term,
 }
 
-Term: i32 = {
-    <int> => i32::from_str(<>).unwrap(),
-    "(" <Term> ")",
+Term: ast::Expr = {
+    <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
+    PrimaryExpr,
 }
+
+PrimaryExpr: ast::Expr = {
+    <Ident> => ast::Expr::Ident(<>),
+    <Literal> => ast::Expr::Literal(<>),
+}
+
+AddOp: ast::BinOp = {
+    "+" => ast::BinOp::Plus,
+    "-" => ast::BinOp::Minus,
+}
+
+MulOp: ast::BinOp = {
+    "*" => ast::BinOp::Times,
+    "/" => ast::BinOp::Divide,
+}
+
+Literal: ast::Literal = {
+    <IntLiteral>,
+    <StringLiteral>,
+}
+
+IntLiteral: ast::Literal =
+    <int> => ast::Literal::Int32(i32::from_str(<>).unwrap());
+
+StringLiteral: ast::Literal =
+    <string> => ast::Literal::Str(<>.to_owned());
+
+Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());

@@ -231,15 +231,11 @@ mod tests {
     use crate::{grammar, lexer::Token};
 
     #[test]
-    fn term_parse() {
-        let lex = Token::lexer("((22))").spanned().map(Token::to_lalr_triple);
-        assert!(grammar::ExprParser::new().parse(lex).is_ok());
-        // assert!(grammar::ExprParser::new().parse("(22)").is_ok());
-        // assert!(grammar::ExprParser::new().parse("((((22))))").is_ok());
-        // assert!(grammar::ExprParser::new().parse("((22)").is_err());
-        let lex = Token::lexer("22 + 6 * 3")
+    fn math_parse() {
+        let lex = Token::lexer("1 + 3 * 2 + 79 * 3")
             .spanned()
             .map(Token::to_lalr_triple);
-        assert!(grammar::ExprParser::new().parse(lex).unwrap() == 40);
+        let ast = grammar::ExprParser::new().parse(lex).unwrap();
+        println!("{:?}", ast);
     }
 }
