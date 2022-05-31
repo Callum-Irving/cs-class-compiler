@@ -57,6 +57,9 @@ pub enum Token<'a> {
     #[token(";")]
     Semicolon,
 
+    #[token(":")]
+    Colon,
+
     #[token("==")]
     IsEqual,
 
@@ -122,6 +125,9 @@ pub enum Token<'a> {
 
     #[token("var")]
     Var,
+
+    #[token("const")]
+    Const,
 
     #[token("in")]
     In,

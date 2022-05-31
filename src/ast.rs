@@ -6,27 +6,29 @@ pub enum TopLevelStmt {
     FunctionDef,
 }
 
-pub struct ConstantDef {
-    binding: TypeBinding,
-    value: Literal,
+pub struct ConstDef {
+    pub binding: TypeBinding,
+    pub value: i32,
 }
 
-pub struct VariableDef {
-    binding: TypeBinding,
-    value: Literal,
+pub struct VarDef {
+    pub binding: TypeBinding,
+    pub value: i32,
 }
 
 pub struct FunctionDef {
-    name: Identifier,
+    name: Ident,
     params: Vec<TypeBinding>,
     return_type: Option<Type>,
 }
 
+#[derive(Debug)]
 pub struct TypeBinding {
-    name: Identifier,
-    value_type: Type,
+    pub name: Ident,
+    pub value_type: Type,
 }
 
+#[derive(Debug)]
 pub enum Type {
     Int,
     UInt,
@@ -34,4 +36,5 @@ pub enum Type {
 
 pub enum Literal {}
 
-pub struct Identifier(String);
+#[derive(Debug)]
+pub struct Ident(pub String);
