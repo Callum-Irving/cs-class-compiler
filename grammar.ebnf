@@ -1,0 +1,30 @@
+Program      ::= TopLevelExpr+
+
+TopLevelExpr ::= FunctionDef
+|                ConstDef
+
+FunctionDef ::= "func" IDENTIFIER "(" (TypeBinding ("," TypeBinding)*)? ")" BlockStmt
+
+// Statements
+Stmt        ::= BlockStmt
+|               ExprStmt
+|               VarDef
+|               ConstDef
+|               IfStmt
+|               WhileStmt
+
+BlockStmt   ::= "{" Stmt* "}"
+ExprStmt    ::= Expr ";"
+VarDef      ::= "var" TypeBinding "=" Expr ";"
+ConstDef    ::= "const" TypeBinding "=" Expr ";"
+IfStmt      ::= "if" "(" Expr ")" BlockStmt
+WhileStmt   ::= "while" "(" Expr ")" BlockStmt
+
+// Expressions
+Expr        ::= BinaryExpr
+|               UnaryExpr
+
+BinaryExpr  ::= Expr ("+" | "-" | "*" | "/") Expr
+UnaryExpr   ::= UNARY_OP Expr
+
+TypeBinding ::= IDENTIFIER ":" TYPE

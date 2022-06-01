@@ -18,8 +18,13 @@ extern {
         "const" => lexer::Token::Const,
         "var" => lexer::Token::Var,
 
+        "if" => lexer::Token::If,
+        "while" => lexer::Token::While,
+
         "(" => lexer::Token::LParen,
         ")" => lexer::Token::RParen,
+        "{" => lexer::Token::LCurly,
+        "}" => lexer::Token::RCurly,
         ":" => lexer::Token::Colon,
         ";" => lexer::Token::Semicolon,
         "=" => lexer::Token::Equals,
@@ -29,6 +34,7 @@ extern {
         "-" => lexer::Token::Minus,
         "*" => lexer::Token::Times,
         "/" => lexer::Token::Divide,
+        "%" => lexer::Token::Percent,
 
         // Types
         "int" => lexer::Token::Int,
@@ -44,11 +50,34 @@ extern {
     }
 }
 
+// STATEMENTS
+
+pub Stmt: ast::Stmt = {
+    <Expr> ";" => ast::Stmt::ExprStmt(<>),
+    <BlockStmt> => ast::Stmt::BlockStmt(<>),
+    <IfStmt>,
+    <WhileStmt>,
+    <ConstDef> => ast::Stmt::ConstDef(<>),
+    <VarDef> => ast::Stmt::VarDef(<>),
+}
+
+BlockStmt: ast::BlockStmt =
+    "{" <Stmt*> "}" => ast::BlockStmt(<>);
+
+IfStmt: ast::Stmt =
+    "if" "(" <condition:Expr> ")" <body:BlockStmt> => ast::Stmt::IfStmt(ast::IfStmt {<>});
+
+WhileStmt: ast::Stmt =
+    "while" "(" <condition:Expr> ")" <body:BlockStmt> => ast::Stmt::WhileStmt(ast::WhileStmt {<>});
+
 ConstDef: ast::ConstDef =
-    "const" <binding:TypeBinding> "=" <value:Expr> => ast::ConstDef{ <> };
+    "const" <binding:TypeBinding> "=" <value:Expr> ";" => ast::ConstDef{ <> };
 
 VarDef: ast::VarDef =
-    "var" <binding:TypeBinding> "=" <value:Expr> => ast::VarDef { <> };
+    "var" <binding:TypeBinding> "=" <value:Expr> ";" => ast::VarDef { <> };
+
+
+// EXPRESSIONS
 
 TypeBinding: ast::TypeBinding =
     <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, value_type: t};
@@ -67,6 +96,7 @@ Type: ast::Type = {
 }
 
 pub Expr: ast::Expr = {
+    "(" <Expr> ")",
     <ArithmaticExpr>,
 }
 
@@ -78,6 +108,10 @@ ArithmaticExpr: ast::Expr = {
 Term: ast::Expr = {
     <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
     PrimaryExpr,
+}
+
+AndExpr: ast::Expr = {
+
 }
 
 PrimaryExpr: ast::Expr = {

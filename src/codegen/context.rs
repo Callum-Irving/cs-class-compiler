@@ -1,5 +1,4 @@
-use llvm_sys::prelude::LLVMValueRef;
-use std::collections::HashMap;
+#![allow(dead_code)]
 
 use super::symbol::ScopedSymbolTable;
 

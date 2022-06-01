@@ -81,6 +81,9 @@ pub enum Token<'a> {
     #[token("if")]
     If,
 
+    #[token("while")]
+    While,
+
     #[token("and")]
     And,
 
@@ -107,6 +110,9 @@ pub enum Token<'a> {
 
     #[token("/")]
     Divide,
+
+    #[token("%")]
+    Percent,
 
     #[token("+=")]
     AddAssign,

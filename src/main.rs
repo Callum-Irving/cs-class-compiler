@@ -1,15 +1,10 @@
 mod ast;
 mod codegen;
-mod expr;
 mod lexer;
-mod parser;
 
-use codegen::context::CompilerContext;
 use codegen::*;
 
 use lalrpop_util::lalrpop_mod;
-use lexer::Token;
-use logos::Logos;
 
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
@@ -46,14 +41,11 @@ fn main() {
         let module = LLVMModuleCreateWithName(c_str!("main"));
         let builder = LLVMCreateBuilderInContext(context);
 
-        let compiler = CompilerContext::new();
-
         // Set target triple
         // TODO: Should depend on system
         LLVMSetTarget(module, c_str!("x86_64-pc-linux-gnu"));
 
         // Commonly used types
-        let void_type = LLVMVoidTypeInContext(context);
         let i32_type = LLVMInt32TypeInContext(context);
         let i8_type = LLVMInt8TypeInContext(context);
         let i8_ptr_type = LLVMPointerType(i8_type, 0);

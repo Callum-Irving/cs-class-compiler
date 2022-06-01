@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use llvm_sys::prelude::LLVMValueRef;
 use std::collections::HashMap;
 
