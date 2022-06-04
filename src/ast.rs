@@ -6,10 +6,10 @@ pub enum TopLevelStmt {
 }
 
 pub struct FunctionDef {
-    name: Ident,
-    params: Vec<TypeBinding>,
-    return_type: Option<Type>,
-    body: BlockStmt,
+    pub name: Ident,
+    pub params: Vec<TypeBinding>,
+    pub return_type: Option<Type>,
+    pub body: BlockStmt,
 }
 
 // STATEMENTS
@@ -59,6 +59,13 @@ pub enum Expr {
     Unary(UnaryOp, Box<Expr>),
     Literal(Literal),
     Ident(Ident),
+    FunctionCall(FunctionCall),
+}
+
+#[derive(Debug)]
+pub struct FunctionCall {
+    pub name: Box<Expr>,
+    pub params: Vec<Expr>,
 }
 
 #[derive(Debug)]
@@ -74,6 +81,8 @@ pub enum BinOp {
     Minus,
     Times,
     Divide,
+    LogicalAnd,
+    LogicalOr,
 }
 
 #[derive(Debug)]
@@ -101,6 +110,8 @@ pub enum Type {
 pub enum Literal {
     Int32(i32),
     Str(String),
+    True,
+    False,
 }
 
 #[derive(Debug)]

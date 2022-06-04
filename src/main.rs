@@ -230,4 +230,21 @@ mod tests {
         let ast = grammar::ExprParser::new().parse(lex).unwrap();
         println!("{:?}", ast);
     }
+
+    #[test]
+    fn expr_parse() {
+        let lex = Token::lexer("not 123 and (ident and 123) or other_ident and true")
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ExprParser::new().parse(lex).unwrap();
+        println!("{:?}", ast);
+    }
+
+    #[test]
+    fn func_parse() {
+        let lex = Token::lexer(include_str!("../examples/main.test"))
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::FunctionDefParser::new().parse(lex).unwrap();
+    }
 }

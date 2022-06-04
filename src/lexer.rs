@@ -6,6 +6,9 @@ pub enum Token<'a> {
     #[regex(r#""([^"\\]|\\.)*""#)]
     StringLiteral(&'a str),
 
+    #[token("func")]
+    Func,
+
     #[token("void")]
     Void,
 
@@ -90,6 +93,9 @@ pub enum Token<'a> {
     #[token("not")]
     Not,
 
+    #[token("&")]
+    Ampersand,
+
     #[token("or")]
     Or,
 
@@ -126,9 +132,8 @@ pub enum Token<'a> {
     #[token("/=")]
     DivAssign,
 
-    #[token("\n")]
-    Newline,
-
+    // #[token("\n")]
+    // Newline,
     #[token("var")]
     Var,
 
@@ -180,7 +185,7 @@ pub enum Token<'a> {
     #[regex(r#"-?[0-9]+"#)]
     IntLiteral(&'a str),
 
-    #[regex(r"[ \t\r]+", logos::skip)]
+    #[regex(r"[ \t\r\n]+", logos::skip)]
     Whitespace,
 
     #[error]

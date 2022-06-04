@@ -13,12 +13,22 @@ extern {
         string => lexer::Token::StringLiteral(<&'input str>),
         int => lexer::Token::IntLiteral(<&'input str>),
         ident => lexer::Token::Ident(<&'input str>),
-        newline => lexer::Token::Newline,
+        // "\n" => lexer::Token::Newline,
 
         "const" => lexer::Token::Const,
         "var" => lexer::Token::Var,
+        "->" => lexer::Token::Arrow,
+        "func" => lexer::Token::Func,
+
+        "&" => lexer::Token::Ampersand,
+        "," => lexer::Token::Comma,
 
         "if" => lexer::Token::If,
+        "true" => lexer::Token::True,
+        "false" => lexer::Token::False,
+        "and" => lexer::Token::And,
+        "or" => lexer::Token::Or,
+        "not" => lexer::Token::Not,
         "while" => lexer::Token::While,
 
         "(" => lexer::Token::LParen,
@@ -48,6 +58,19 @@ extern {
         "uint32" => lexer::Token::UInt32,
         "uint64" => lexer::Token::UInt64,
     }
+}
+
+pub FunctionDef: ast::FunctionDef =
+    "func" <name:Ident> "(" <params:ParamsList?> ")" <return_type:("->" <Type>)?> <body:BlockStmt> => ast::FunctionDef {
+        name,
+        params: params.unwrap_or(vec![]),
+        return_type,
+        body,
+    };
+
+ParamsList: Vec<ast::TypeBinding> = {
+    <mut a:ParamsList> ","  <b:TypeBinding> => {a.push(b); a},
+    <TypeBinding> => vec![<>],
 }
 
 // STATEMENTS
@@ -96,27 +119,52 @@ Type: ast::Type = {
 }
 
 pub Expr: ast::Expr = {
-    "(" <Expr> ")",
+    <AndExpr>,
+}
+
+AndExpr: ast::Expr = {
+    <l:AndExpr> "and" <r:OrExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::LogicalAnd, Box::new(r)),
+    <OrExpr>,
+}
+
+OrExpr: ast::Expr = {
+    <l:OrExpr> "or" <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::LogicalOr, Box::new(r)),
     <ArithmaticExpr>,
 }
 
 ArithmaticExpr: ast::Expr = {
     <l:ArithmaticExpr> <op:AddOp> <r:Term> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
-    Term,
+    <Term>,
 }
 
 Term: ast::Expr = {
     <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
-    PrimaryExpr,
+    <UnaryExpr>,
 }
 
-AndExpr: ast::Expr = {
+// Unary expressions:
+UnaryExpr: ast::Expr = {
+    <op:UnaryOp> <value:FunctionCall> => ast::Expr::Unary(op, Box::new(value)),
+    <FunctionCall>,
+}
 
+// TODO: name could just be an identifier
+FunctionCall: ast::Expr = {
+    <name:FunctionCall> "(" <params:ArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), params: params}),
+    <PrimaryExpr>,
+}
+
+ArgsList: Vec<ast::Expr> = {
+    <mut a:ArgsList> ","  <b:Expr> => {a.push(b); a},
+    <Expr> => vec![<>],
 }
 
 PrimaryExpr: ast::Expr = {
     <Ident> => ast::Expr::Ident(<>),
     <Literal> => ast::Expr::Literal(<>),
+    "true" => ast::Expr::Literal(ast::Literal::True),
+    "false" => ast::Expr::Literal(ast::Literal::False),
+    "(" <Expr> ")",
 }
 
 AddOp: ast::BinOp = {
@@ -127,6 +175,12 @@ AddOp: ast::BinOp = {
 MulOp: ast::BinOp = {
     "*" => ast::BinOp::Times,
     "/" => ast::BinOp::Divide,
+}
+
+UnaryOp: ast::UnaryOp = {
+    "&" => ast::UnaryOp::Reference,
+    "-" => ast::UnaryOp::Minus,
+    "not" => ast::UnaryOp::Not,
 }
 
 Literal: ast::Literal = {
