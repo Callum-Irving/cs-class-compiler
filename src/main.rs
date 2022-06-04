@@ -19,7 +19,44 @@ macro_rules! c_str {
     };
 }
 
+// POSIX system calls
+use std::ffi::c_void;
+use std::os::raw::c_int;
+extern "C" {
+    fn write(fd: c_int, buf: *const c_void, count: usize) -> c_int;
+    fn read(fd: c_int, buf: *const c_void, count: usize) -> c_int;
+}
+
+/// Write a string to stdout using POSIX write system call.
+fn write_safe(s: &str) -> i32 {
+    unsafe {
+        let res = write(0, s.as_bytes().as_ptr() as *const c_void, s.len());
+        return res;
+    }
+}
+
+/// Reads until a newline from stdout using POSIX read call.
+fn read_safe(buf: &mut [u8]) -> i32 {
+    unsafe {
+        let res = read(1, buf.as_mut_ptr() as *mut c_void, 10);
+        return res;
+    }
+}
+
 fn main() {
+    let mut buf = [0u8; 20];
+    for i in 0..20 {
+        buf[i] = b'a' + i as u8;
+    }
+    buf[19] = b'\n';
+    unsafe {
+        write(0, buf.as_ptr() as *const std::ffi::c_void, 20);
+    }
+    write_safe("Hello, world!\n");
+    let mut buf = vec![0u8; 128];
+    let status = read_safe(&mut buf);
+    print!("{}: {}", status, String::from_utf8(buf).unwrap());
+
     // let src = r#"fun main() -> void {
     //     println!("Hello, world!")
     //     var arr = [0, -1, 65, 23, 34]
