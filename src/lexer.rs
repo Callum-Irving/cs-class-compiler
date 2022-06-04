@@ -54,6 +54,9 @@ pub enum Token<'a> {
     #[token("int64")]
     Int64,
 
+    #[token("str")]
+    Str,
+
     #[token("for")]
     For,
 

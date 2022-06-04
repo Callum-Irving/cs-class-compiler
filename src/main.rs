@@ -279,9 +279,17 @@ mod tests {
 
     #[test]
     fn func_parse() {
-        let lex = Token::lexer(include_str!("../examples/main.test"))
+        let lex = Token::lexer(include_str!("../examples/func.test"))
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::FunctionDefParser::new().parse(lex).unwrap();
+    }
+
+    #[test]
+    fn program_parse() {
+        let lex = Token::lexer(include_str!("../examples/main.test"))
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ProgramParser::new().parse(lex).unwrap();
     }
 }

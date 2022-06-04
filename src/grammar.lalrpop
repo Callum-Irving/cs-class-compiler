@@ -19,6 +19,7 @@ extern {
         "var" => lexer::Token::Var,
         "->" => lexer::Token::Arrow,
         "func" => lexer::Token::Func,
+        "extern" => lexer::Token::Extern,
 
         "&" => lexer::Token::Ampersand,
         "," => lexer::Token::Comma,
@@ -35,6 +36,8 @@ extern {
         ")" => lexer::Token::RParen,
         "{" => lexer::Token::LCurly,
         "}" => lexer::Token::RCurly,
+        "[" => lexer::Token::LSquare,
+        "]" => lexer::Token::RSquare,
         ":" => lexer::Token::Colon,
         ";" => lexer::Token::Semicolon,
         "=" => lexer::Token::Equals,
@@ -57,16 +60,24 @@ extern {
         "uint16" => lexer::Token::UInt16,
         "uint32" => lexer::Token::UInt32,
         "uint64" => lexer::Token::UInt64,
+        "char" => lexer::Token::Char,
+        "str" => lexer::Token::Str,
     }
 }
 
-pub FunctionDef: ast::FunctionDef =
-    "func" <name:Ident> "(" <params:ParamsList?> ")" <return_type:("->" <Type>)?> <body:BlockStmt> => ast::FunctionDef {
-        name,
-        params: params.unwrap_or(vec![]),
-        return_type,
-        body,
-    };
+pub Program: ast::Program = <TopLevelStmt*> => ast::Program(<>);
+
+TopLevelStmt: ast::TopLevelStmt = {
+    <FunctionDef> => ast::TopLevelStmt::FunctionDef(<>),
+    <ConstDef> => ast::TopLevelStmt::ConstDef(<>),
+    <ExternDef> => ast::TopLevelStmt::ExternDef(<>),
+}
+
+pub FunctionDef: ast::FunctionDef = "func" <name:Ident> "(" <params:MaybeParamsList> ")" <return_type:("->" <Type>)?> <body:BlockStmt> => ast::FunctionDef {<>};
+
+ExternDef: ast::ExternDef = "extern" <name:Ident> "(" <params:MaybeParamsList> ")" <return_type:("->" <Type>)?> ";" => ast::ExternDef {<>};
+
+MaybeParamsList: Vec<ast::TypeBinding> = <ParamsList?> => <>.unwrap_or(vec![]);
 
 ParamsList: Vec<ast::TypeBinding> = {
     <mut a:ParamsList> ","  <b:TypeBinding> => {a.push(b); a},
@@ -106,6 +117,7 @@ TypeBinding: ast::TypeBinding =
     <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, value_type: t};
 
 Type: ast::Type = {
+    "[" <Type> "]" => ast::Type::Array(Box::new(<>)),
     "int" => ast::Type::Int,
     "int8" => ast::Type::Int8,
     "int16" => ast::Type::Int16,
@@ -116,6 +128,8 @@ Type: ast::Type = {
     "uint16" => ast::Type::UInt16,
     "uint32" => ast::Type::UInt32,
     "uint64" => ast::Type::UInt64,
+    "char" => ast::Type::Char,
+    "str" => ast::Type::Str,
 }
 
 pub Expr: ast::Expr = {
@@ -150,9 +164,11 @@ UnaryExpr: ast::Expr = {
 
 // TODO: name could just be an identifier
 FunctionCall: ast::Expr = {
-    <name:FunctionCall> "(" <params:ArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), params: params}),
+    <name:FunctionCall> "(" <params:MaybeArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), params: params}),
     <PrimaryExpr>,
 }
+
+MaybeArgsList: Vec<ast::Expr> = <ArgsList?> => <>.unwrap_or(vec![]);
 
 ArgsList: Vec<ast::Expr> = {
     <mut a:ArgsList> ","  <b:Expr> => {a.push(b); a},

@@ -1,3 +1,9 @@
+const CONSTINT: uint = 354;
+
+extern read(fd: int, buf: [char], count: uint) -> int;
+
 func main() -> int {
     println("Hello, world!");
+
+    done();
 }

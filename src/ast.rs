@@ -1,8 +1,9 @@
-pub struct Program(Vec<TopLevelStmt>);
+pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
     FunctionDef(FunctionDef),
     ConstDef(ConstDef),
+    ExternDef(ExternDef),
 }
 
 pub struct FunctionDef {
@@ -10,6 +11,12 @@ pub struct FunctionDef {
     pub params: Vec<TypeBinding>,
     pub return_type: Option<Type>,
     pub body: BlockStmt,
+}
+
+pub struct ExternDef {
+    pub name: Ident,
+    pub params: Vec<TypeBinding>,
+    pub return_type: Option<Type>,
 }
 
 // STATEMENTS
@@ -103,7 +110,9 @@ pub enum Type {
     UInt16,
     UInt32,
     UInt64,
+    Char,
     Str,
+    Array(Box<Type>),
 }
 
 #[derive(Debug)]

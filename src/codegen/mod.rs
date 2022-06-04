@@ -2,6 +2,7 @@
 
 pub mod context;
 mod symbol;
+mod ast_codegen;
 
 use crate::c_str;
 
