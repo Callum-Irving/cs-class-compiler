@@ -109,7 +109,8 @@ fn main() {
         let main_block = LLVMAppendBasicBlockInContext(context, main_fn, c_str!(""));
         LLVMPositionBuilderAtEnd(builder, main_block);
 
-        let res = binary_expr.codegen(context, module, builder);
+        let mut compiler = codegen::context::CompilerContext::new();
+        let res = binary_expr.codegen(&mut compiler, context, module, builder);
 
         let i32_fmt_string = LLVMBuildGlobalStringPtr(builder, c_str!("Result: %d\n"), c_str!(""));
         LLVMBuildCall(
@@ -290,11 +291,12 @@ mod tests {
             use crate::codegen::Codegen;
             use llvm_sys::core::*;
 
+            let mut compiler = crate::codegen::context::CompilerContext::new();
             let context = LLVMContextCreate();
             let module = LLVMModuleCreateWithName(c_str!("main"));
             let builder = LLVMCreateBuilderInContext(context);
 
-            let value = ast.codegen(context, module, builder);
+            let value = ast.codegen(&mut compiler, context, module, builder);
             let ir = LLVMPrintValueToString(value);
             use std::ffi::CStr;
             let cstr = CStr::from_ptr(ir);

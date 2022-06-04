@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+mod ast_codegen;
 pub mod context;
 mod symbol;
-mod ast_codegen;
 
 use crate::c_str;
 
@@ -14,7 +14,8 @@ use std::os::raw::c_ulonglong;
 pub trait Codegen {
     unsafe fn codegen(
         &self,
-        context: *mut LLVMContext,
+        ctx: &mut context::CompilerContext,
+        llvm_context: *mut LLVMContext,
         module: *mut LLVMModule,
         builder: *mut LLVMBuilder,
     ) -> LLVMValueRef;
@@ -29,6 +30,7 @@ pub struct Int32Expr(pub i32);
 impl Codegen for Int32Expr {
     unsafe fn codegen(
         &self,
+        ctx: &mut context::CompilerContext,
         context: *mut LLVMContext,
         _module: *mut LLVMModule,
         _builder: *mut LLVMBuilder,
@@ -47,6 +49,7 @@ pub struct BinaryExpr {
 impl Codegen for BinaryExpr {
     unsafe fn codegen(
         &self,
+        ctx: &mut context::CompilerContext,
         context: *mut LLVMContext,
         module: *mut LLVMModule,
         builder: *mut LLVMBuilder,
@@ -54,68 +57,68 @@ impl Codegen for BinaryExpr {
         match self.op.as_str() {
             "+" => LLVMBuildAdd(
                 builder,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "-" => LLVMBuildSub(
                 builder,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "*" => LLVMBuildMul(
                 builder,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "/" => LLVMBuildUDiv(
                 builder,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             ">" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntUGT,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             ">=" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntUGE,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "<" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntULT,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "<=" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntULE,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "==" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntEQ,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             "!=" => LLVMBuildICmp(
                 builder,
                 llvm_sys::LLVMIntPredicate::LLVMIntNE,
-                self.lhs.codegen(context, module, builder),
-                self.rhs.codegen(context, module, builder),
+                self.lhs.codegen(ctx, context, module, builder),
+                self.rhs.codegen(ctx, context, module, builder),
                 c_str!(""),
             ),
             _ => panic!("Invalid op for binary expr: {}", self.op),

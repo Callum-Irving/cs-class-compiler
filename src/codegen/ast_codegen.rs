@@ -1,10 +1,12 @@
+use super::context::CompilerContext;
 use super::Codegen;
+use crate::ast;
 use crate::EMPTY_NAME;
-use crate::{ast, c_str};
 
 impl Codegen for ast::Program {
     unsafe fn codegen(
         &self,
+        ctx: &mut CompilerContext,
         _context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
@@ -16,6 +18,7 @@ impl Codegen for ast::Program {
 impl Codegen for ast::Expr {
     unsafe fn codegen(
         &self,
+        ctx: &mut CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
@@ -25,12 +28,12 @@ impl Codegen for ast::Expr {
         use llvm_sys::prelude::LLVMValueRef;
         match self {
             Expr::FunctionCall(call) => {
-                let func = call.name.codegen(context, module, builder);
+                let func = call.name.codegen(ctx, context, module, builder);
                 let mut args: Vec<LLVMValueRef> = call
                     .args
                     .iter()
                     .cloned()
-                    .map(|expr| expr.codegen(context, module, builder))
+                    .map(|expr| expr.codegen(ctx, context, module, builder))
                     .collect();
                 LLVMBuildCall(
                     builder,
@@ -41,8 +44,8 @@ impl Codegen for ast::Expr {
                 )
             }
             Expr::Binary(l, op, r) => {
-                let l_val = l.codegen(context, module, builder);
-                let r_val = r.codegen(context, module, builder);
+                let l_val = l.codegen(ctx, context, module, builder);
+                let r_val = r.codegen(ctx, context, module, builder);
 
                 // TODO: This assumes l and r are both ints
                 // should have handling for floats as well
@@ -61,7 +64,7 @@ impl Codegen for ast::Expr {
                 }
             }
             Expr::Unary(op, data) => {
-                let data_val = data.codegen(context, module, builder);
+                let data_val = data.codegen(ctx, context, module, builder);
                 use ast::UnaryOp;
                 match op {
                     UnaryOp::Reference => todo!(),
@@ -69,8 +72,8 @@ impl Codegen for ast::Expr {
                     UnaryOp::Not => LLVMBuildNot(builder, data_val, EMPTY_NAME),
                 }
             }
-            Expr::Literal(lit) => lit.codegen(context, module, builder),
-            Expr::Ident(ident) => todo!(),
+            Expr::Literal(lit) => lit.codegen(ctx, context, module, builder),
+            Expr::Ident(_ident) => todo!(),
         }
     }
 }
@@ -78,6 +81,7 @@ impl Codegen for ast::Expr {
 impl Codegen for ast::Literal {
     unsafe fn codegen(
         &self,
+        ctx: &mut CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
