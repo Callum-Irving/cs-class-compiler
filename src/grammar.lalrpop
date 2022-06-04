@@ -208,6 +208,6 @@ IntLiteral: ast::Literal =
     <int> => ast::Literal::Int32(i32::from_str(<>).unwrap());
 
 StringLiteral: ast::Literal =
-    <string> => ast::Literal::Str(<>.to_owned());
+    <string> => ast::Literal::Str((<>[1..<>.len() - 1]).to_owned());
 
 Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());

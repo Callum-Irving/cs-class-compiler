@@ -30,7 +30,7 @@ pub struct Int32Expr(pub i32);
 impl Codegen for Int32Expr {
     unsafe fn codegen(
         &self,
-        ctx: &mut context::CompilerContext,
+        _ctx: &mut context::CompilerContext,
         context: *mut LLVMContext,
         _module: *mut LLVMModule,
         _builder: *mut LLVMBuilder,

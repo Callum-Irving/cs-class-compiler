@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn expr_codegen() {
-        let lex = Token::lexer("123 + 22 - -3")
+        let lex = Token::lexer("\"hello\" + 1")
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::ExprParser::new().parse(lex).unwrap();
@@ -297,7 +297,9 @@ mod tests {
             let builder = LLVMCreateBuilderInContext(context);
 
             let value = ast.codegen(&mut compiler, context, module, builder);
+            println!("Generated!");
             let ir = LLVMPrintValueToString(value);
+            //let ir = LLVMPrintModuleToString(module);
             use std::ffi::CStr;
             let cstr = CStr::from_ptr(ir);
             println!("{}", cstr.to_str().unwrap());

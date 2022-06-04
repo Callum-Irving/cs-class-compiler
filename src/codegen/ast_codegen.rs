@@ -6,7 +6,7 @@ use crate::EMPTY_NAME;
 impl Codegen for ast::Program {
     unsafe fn codegen(
         &self,
-        ctx: &mut CompilerContext,
+        _ctx: &mut CompilerContext,
         _context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
@@ -81,7 +81,7 @@ impl Codegen for ast::Expr {
 impl Codegen for ast::Literal {
     unsafe fn codegen(
         &self,
-        ctx: &mut CompilerContext,
+        _ctx: &mut CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
@@ -95,8 +95,16 @@ impl Codegen for ast::Literal {
                 // TODO: use better conversion method
                 LLVMConstInt(i32_type, *value as u64, 1)
             }
+            // TODO: Crashes program if not in a function
             Literal::Str(string) => {
-                LLVMBuildGlobalStringPtr(builder, string.as_ptr() as *const i8, EMPTY_NAME)
+                use std::ffi::CString;
+                // TODO: Handle this error
+                let converted_string = CString::new(string.as_bytes()).unwrap();
+                LLVMBuildGlobalStringPtr(
+                    builder,
+                    converted_string.as_ptr() as *const i8,
+                    EMPTY_NAME,
+                )
             }
             Literal::True => {
                 let i1_type = LLVMInt1TypeInContext(context);
