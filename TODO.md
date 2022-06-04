@@ -5,3 +5,4 @@
 - Arrays
 - Vectors
 - Some sort of string / char array
+- Bigint for int type when parsing

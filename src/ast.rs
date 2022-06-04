@@ -60,29 +60,29 @@ pub struct VarDef {
 
 // EXPRESSIONS
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
+    FunctionCall(FunctionCall),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
     Literal(Literal),
     Ident(Ident),
-    FunctionCall(FunctionCall),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionCall {
     pub name: Box<Expr>,
-    pub params: Vec<Expr>,
+    pub args: Vec<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnaryOp {
     Reference,
     Minus,
     Not,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinOp {
     Plus,
     Minus,
@@ -115,7 +115,9 @@ pub enum Type {
     Array(Box<Type>),
 }
 
-#[derive(Debug)]
+// TODO: Should only be one type of int literal
+// (since we can't tell the type when parsing).
+#[derive(Debug, Clone)]
 pub enum Literal {
     Int32(i32),
     Str(String),
@@ -123,5 +125,5 @@ pub enum Literal {
     False,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ident(pub String);

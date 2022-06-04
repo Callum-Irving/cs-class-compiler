@@ -164,7 +164,7 @@ UnaryExpr: ast::Expr = {
 
 // TODO: name could just be an identifier
 FunctionCall: ast::Expr = {
-    <name:FunctionCall> "(" <params:MaybeArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), params: params}),
+    <name:FunctionCall> "(" <args:MaybeArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), args: args}),
     <PrimaryExpr>,
 }
 

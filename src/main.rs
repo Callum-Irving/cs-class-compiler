@@ -19,12 +19,14 @@ macro_rules! c_str {
     };
 }
 
+pub const EMPTY_NAME: *const i8 = c_str!("");
+
 // POSIX system calls
 use std::ffi::c_void;
 use std::os::raw::c_int;
 extern "C" {
     fn write(fd: c_int, buf: *const c_void, count: usize) -> c_int;
-    fn read(fd: c_int, buf: *const c_void, count: usize) -> c_int;
+    fn read(fdi: c_int, buf: *const c_void, count: usize) -> c_int;
 }
 
 /// Write a string to stdout using POSIX write system call.
@@ -264,8 +266,8 @@ mod tests {
         let lex = Token::lexer("1 + 3 * 2 + 79 * 3")
             .spanned()
             .map(Token::to_lalr_triple);
-        let ast = grammar::ExprParser::new().parse(lex).unwrap();
-        println!("{:?}", ast);
+        let ast = grammar::ExprParser::new().parse(lex);
+        assert!(ast.is_ok());
     }
 
     #[test]
@@ -273,8 +275,35 @@ mod tests {
         let lex = Token::lexer("not 123 and (ident and 123) or other_ident and true")
             .spanned()
             .map(Token::to_lalr_triple);
+        let ast = grammar::ExprParser::new().parse(lex);
+        assert!(ast.is_ok());
+    }
+
+    #[test]
+    fn expr_codegen() {
+        let lex = Token::lexer("123 + 22 - -3")
+            .spanned()
+            .map(Token::to_lalr_triple);
         let ast = grammar::ExprParser::new().parse(lex).unwrap();
-        println!("{:?}", ast);
+
+        unsafe {
+            use crate::codegen::Codegen;
+            use llvm_sys::core::*;
+
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+
+            let value = ast.codegen(context, module, builder);
+            let ir = LLVMPrintValueToString(value);
+            use std::ffi::CStr;
+            let cstr = CStr::from_ptr(ir);
+            println!("{}", cstr.to_str().unwrap());
+
+            LLVMDisposeBuilder(builder);
+            LLVMDisposeModule(module);
+            LLVMContextDispose(context);
+        }
     }
 
     #[test]
@@ -282,7 +311,8 @@ mod tests {
         let lex = Token::lexer(include_str!("../examples/func.test"))
             .spanned()
             .map(Token::to_lalr_triple);
-        let ast = grammar::FunctionDefParser::new().parse(lex).unwrap();
+        let ast = grammar::FunctionDefParser::new().parse(lex);
+        assert!(ast.is_ok());
     }
 
     #[test]
@@ -290,6 +320,7 @@ mod tests {
         let lex = Token::lexer(include_str!("../examples/main.test"))
             .spanned()
             .map(Token::to_lalr_triple);
-        let ast = grammar::ProgramParser::new().parse(lex).unwrap();
+        let ast = grammar::ProgramParser::new().parse(lex);
+        assert!(ast.is_ok());
     }
 }
