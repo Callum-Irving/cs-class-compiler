@@ -232,13 +232,20 @@ impl ast::Type {
         use ast::Type;
 
         match self {
-            // TODO: Get the C int type for the current system
-            Type::Int => LLVMInt32TypeInContext(context),
+            // TODO: Get the C int type for the current system for Int and UInt types
+            Type::Int | Type::UInt => LLVMInt32TypeInContext(context),
+            Type::Int8 | Type::UInt8 | Type::Char => LLVMInt8TypeInContext(context),
+            Type::Int16 | Type::UInt16 => LLVMInt16TypeInContext(context),
+            Type::Int32 | Type::UInt32 => LLVMInt32TypeInContext(context),
+            Type::Int64 | Type::UInt64 => LLVMInt64TypeInContext(context),
             Type::Str => {
                 let i8_type = LLVMInt8TypeInContext(context);
                 LLVMPointerType(i8_type, 0)
             }
-            _ => todo!(),
+            Type::Array(inner) => {
+                let inner_type = inner.as_llvm_type(context);
+                LLVMPointerType(inner_type, 0)
+            }
         }
     }
 }

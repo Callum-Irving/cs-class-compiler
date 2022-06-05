@@ -7,3 +7,8 @@
 - Some sort of string / char array
 - Variadic functions
 - Bigint for int type when parsing
+
+## Big TODOs:
+
+- Type checker
+- Module system
