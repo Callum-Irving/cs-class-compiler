@@ -3,7 +3,7 @@
 use super::symbol::ScopedSymbolTable;
 
 pub struct CompilerContext {
-    symbols: ScopedSymbolTable,
+    pub symbols: ScopedSymbolTable,
 }
 
 impl CompilerContext {

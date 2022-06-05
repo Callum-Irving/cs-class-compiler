@@ -1,0 +1,5 @@
+extern puts(s: str) -> int;
+
+func main() {
+    puts("Hello, world!");
+}

@@ -182,7 +182,7 @@ pub enum Token<'a> {
     #[token("extern")]
     Extern,
 
-    #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]+"#)]
+    #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]*"#)]
     Ident(&'a str),
 
     #[regex(r#"-?[0-9]+"#)]

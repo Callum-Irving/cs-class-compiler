@@ -113,13 +113,8 @@ fn main() {
         let res = binary_expr.codegen(&mut compiler, context, module, builder);
 
         let i32_fmt_string = LLVMBuildGlobalStringPtr(builder, c_str!("Result: %d\n"), c_str!(""));
-        LLVMBuildCall(
-            builder,
-            printf_fn,
-            [i32_fmt_string, res].as_ptr() as *mut _,
-            2,
-            c_str!(""),
-        );
+        let args = vec![i32_fmt_string, res];
+        LLVMBuildCall(builder, printf_fn, args.as_ptr() as *mut _, 2, c_str!(""));
 
         // LLVMBuildRetVoid(builder);
         LLVMBuildRet(builder, LLVMConstInt(i32_type, 0, 0));
@@ -258,6 +253,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
     use logos::Logos;
 
     use crate::{grammar, lexer::Token};
@@ -282,7 +278,7 @@ mod tests {
 
     #[test]
     fn expr_codegen() {
-        let lex = Token::lexer("\"hello\" + 1")
+        let lex = Token::lexer("1 + 123 - -3 - 0 and 75")
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::ExprParser::new().parse(lex).unwrap();
@@ -297,7 +293,6 @@ mod tests {
             let builder = LLVMCreateBuilderInContext(context);
 
             let value = ast.codegen(&mut compiler, context, module, builder);
-            println!("Generated!");
             let ir = LLVMPrintValueToString(value);
             //let ir = LLVMPrintModuleToString(module);
             use std::ffi::CStr;
@@ -320,11 +315,105 @@ mod tests {
     }
 
     #[test]
+    fn func_codegen() {
+        let lex = Token::lexer(include_str!("../examples/func.test"))
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::FunctionDefParser::new().parse(lex).unwrap();
+
+        unsafe {
+            use crate::codegen::Codegen;
+            use llvm_sys::core::*;
+
+            let mut compiler = crate::codegen::context::CompilerContext::new();
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+
+            let value = ast.codegen(&mut compiler, context, module, builder);
+            // let ir = LLVMPrintValueToString(value);
+            let ir = LLVMPrintModuleToString(module);
+            use std::ffi::CStr;
+            let cstr = CStr::from_ptr(ir);
+            println!("{}", cstr.to_str().unwrap());
+
+            LLVMDisposeBuilder(builder);
+            LLVMDisposeModule(module);
+            LLVMContextDispose(context);
+        }
+    }
+
+    #[test]
+    fn extern_parse() {
+        let lex = Token::lexer("extern puts(s: str) -> int;")
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ProgramParser::new().parse(lex);
+        assert!(ast.is_ok());
+    }
+
+    #[test]
+    fn extern_codegen() {
+        let lex = Token::lexer("extern puts(s: str) -> int;")
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ProgramParser::new().parse(lex).unwrap();
+
+        unsafe {
+            use crate::codegen::Codegen;
+            use llvm_sys::core::*;
+
+            let mut compiler = crate::codegen::context::CompilerContext::new();
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+
+            let value = ast.codegen(&mut compiler, context, module, builder);
+            // let ir = LLVMPrintValueToString(value);
+            let ir = LLVMPrintModuleToString(module);
+            use std::ffi::CStr;
+            let cstr = CStr::from_ptr(ir);
+            println!("{}", cstr.to_str().unwrap());
+
+            LLVMDisposeBuilder(builder);
+            LLVMDisposeModule(module);
+            LLVMContextDispose(context);
+        }
+    }
+
+    #[test]
     fn program_parse() {
         let lex = Token::lexer(include_str!("../examples/main.test"))
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::ProgramParser::new().parse(lex);
         assert!(ast.is_ok());
+    }
+
+    #[test]
+    fn program_codegen() {
+        let lex = Token::lexer(include_str!("../examples/puts.test"))
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ProgramParser::new().parse(lex).unwrap();
+
+        unsafe {
+            use crate::codegen::Codegen;
+            use llvm_sys::core::*;
+
+            let mut compiler = crate::codegen::context::CompilerContext::new();
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+            LLVMSetTarget(module, c_str!("x86_64-pc-linux-gnu"));
+
+            let _ = ast.codegen(&mut compiler, context, module, builder);
+            LLVMPrintModuleToFile(module, c_str!("main.ll"), std::ptr::null_mut());
+            LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
+
+            LLVMDisposeBuilder(builder);
+            LLVMDisposeModule(module);
+            LLVMContextDispose(context);
+        }
     }
 }

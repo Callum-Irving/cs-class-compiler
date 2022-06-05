@@ -92,13 +92,13 @@ pub enum BinOp {
     LogicalOr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeBinding {
     pub name: Ident,
     pub value_type: Type,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Int,
     Int8,

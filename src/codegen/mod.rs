@@ -21,6 +21,7 @@ pub trait Codegen {
     ) -> LLVMValueRef;
 }
 
+#[derive(Debug)]
 pub enum CodegenError {
     EmptySymbolTable,
 }
