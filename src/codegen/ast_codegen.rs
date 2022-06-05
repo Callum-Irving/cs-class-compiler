@@ -7,6 +7,8 @@ use crate::EMPTY_NAME;
 use llvm_sys::core::*;
 use llvm_sys::prelude::LLVMTypeRef;
 use llvm_sys::prelude::LLVMValueRef;
+use num_traits::cast::ToPrimitive;
+use std::os::raw::{c_uint, c_ulonglong};
 
 impl Codegen for ast::Program {
     unsafe fn codegen(
@@ -43,7 +45,7 @@ impl Codegen for ast::ExternDef {
             .params
             .iter()
             .cloned()
-            .map(|t| t.value_type.as_llvm_type(context))
+            .map(|t| t.ty.as_llvm_type(context))
             .collect();
         let return_type = if let Some(t) = &self.return_type {
             t.as_llvm_type(context)
@@ -76,7 +78,7 @@ impl Codegen for ast::FunctionDef {
             .params
             .iter()
             .cloned()
-            .map(|t| t.value_type.as_llvm_type(context))
+            .map(|t| t.ty.as_llvm_type(context))
             .collect();
 
         let return_type = if let Some(t) = &self.return_type {
@@ -84,8 +86,12 @@ impl Codegen for ast::FunctionDef {
         } else {
             LLVMVoidTypeInContext(context)
         };
-        let func_type =
-            LLVMFunctionType(return_type, args.as_ptr() as *mut _, args.len() as u32, 0);
+        let func_type = LLVMFunctionType(
+            return_type,
+            args.as_ptr() as *mut _,
+            args.len() as c_uint,
+            0,
+        );
 
         // Convert name to a C string
         use std::ffi::CString;
@@ -108,17 +114,25 @@ impl Codegen for ast::FunctionDef {
     }
 }
 
-impl Codegen for ast::Stmt {
+impl ast::Stmt {
     unsafe fn codegen(
         &self,
         ctx: &mut super::context::CompilerContext,
         llvm_context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) -> LLVMValueRef {
+    ) {
         use ast::Stmt;
         match self {
-            Stmt::ExprStmt(expr) => expr.codegen(ctx, llvm_context, module, builder),
+            Stmt::ExprStmt(expr) => {
+                expr.codegen(ctx, llvm_context, module, builder);
+            }
+            Stmt::VarDef(def) => {
+                let val = def.value.codegen(ctx, llvm_context, module, builder);
+                ctx.symbols
+                    .add_symbol(def.binding.name.0.clone(), val)
+                    .unwrap();
+            }
             _ => todo!("not implemented for stmt"),
         }
     }
@@ -132,9 +146,9 @@ impl Codegen for ast::Expr {
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
     ) -> llvm_sys::prelude::LLVMValueRef {
-        use ast::Expr;
-        match self {
-            Expr::FunctionCall(call) => {
+        use ast::ExprInner;
+        match &self.val {
+            ExprInner::FunctionCall(call) => {
                 let func = call.name.codegen(ctx, context, module, builder);
                 let args: Vec<LLVMValueRef> = call
                     .args
@@ -147,11 +161,11 @@ impl Codegen for ast::Expr {
                     builder,
                     func,
                     args.as_ptr() as *mut _,
-                    args.len() as u32,
+                    args.len() as c_uint,
                     EMPTY_NAME,
                 )
             }
-            Expr::Binary(l, op, r) => {
+            ExprInner::Binary(l, op, r) => {
                 let l_val = l.codegen(ctx, context, module, builder);
                 let r_val = r.codegen(ctx, context, module, builder);
 
@@ -171,7 +185,7 @@ impl Codegen for ast::Expr {
                     BinOp::LogicalOr => LLVMBuildOr(builder, l_val, r_val, EMPTY_NAME),
                 }
             }
-            Expr::Unary(op, data) => {
+            ExprInner::Unary(op, data) => {
                 let data_val = data.codegen(ctx, context, module, builder);
                 use ast::UnaryOp;
                 match op {
@@ -180,8 +194,8 @@ impl Codegen for ast::Expr {
                     UnaryOp::Not => LLVMBuildNot(builder, data_val, EMPTY_NAME),
                 }
             }
-            Expr::Literal(lit) => lit.codegen(ctx, context, module, builder),
-            Expr::Ident(ident) => *ctx.symbols.get_symbol(&ident.0).unwrap(),
+            ExprInner::Literal(lit) => lit.codegen(ctx, context, module, builder),
+            ExprInner::Ident(ident) => *ctx.symbols.get_symbol(&ident.0).unwrap(),
         }
     }
 }
@@ -194,16 +208,24 @@ impl Codegen for ast::Literal {
         _module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
     ) -> llvm_sys::prelude::LLVMValueRef {
-        use ast::Literal;
+        use ast::LiteralInner;
 
-        match self {
-            Literal::Int32(value) => {
-                let i32_type = LLVMInt32TypeInContext(context);
+        match &self.val {
+            // TODO: This is dependent on context (fixed)
+            LiteralInner::Int(value) => {
+                // Default to int32 type
+                let ty = self
+                    .ty
+                    .as_ref()
+                    .and_then(|t| Some(t.as_llvm_type(context)))
+                    .unwrap_or(LLVMInt32TypeInContext(context));
+
                 // TODO: use better conversion method
-                LLVMConstInt(i32_type, *value as u64, 1)
+                // TODO: Handle error
+                LLVMConstInt(ty, value.to_i32().unwrap() as c_ulonglong, 1)
             }
             // TODO: Crashes program if not in a function
-            Literal::Str(string) => {
+            LiteralInner::Str(string) => {
                 use std::ffi::CString;
                 // TODO: Handle this error
                 let converted_string = CString::new(string.as_bytes()).unwrap();
@@ -212,16 +234,10 @@ impl Codegen for ast::Literal {
                     converted_string.as_ptr() as *const i8,
                     EMPTY_NAME,
                 )
-
-                // LLVMBuildGEP(builder, global_str, )
             }
-            Literal::True => {
+            LiteralInner::Bool(val) => {
                 let i1_type = LLVMInt1TypeInContext(context);
-                LLVMConstInt(i1_type, 1, 0)
-            }
-            Literal::False => {
-                let i1_type = LLVMInt1TypeInContext(context);
-                LLVMConstInt(i1_type, 0, 0)
+                LLVMConstInt(i1_type, *val as c_ulonglong, 0)
             }
         }
     }
@@ -238,6 +254,7 @@ impl ast::Type {
             Type::Int16 | Type::UInt16 => LLVMInt16TypeInContext(context),
             Type::Int32 | Type::UInt32 => LLVMInt32TypeInContext(context),
             Type::Int64 | Type::UInt64 => LLVMInt64TypeInContext(context),
+            Type::Bool => LLVMInt1TypeInContext(context),
             Type::Str => {
                 let i8_type = LLVMInt8TypeInContext(context);
                 LLVMPointerType(i8_type, 0)

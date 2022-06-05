@@ -1,6 +1,7 @@
 use crate::lexer;
 use crate::ast;
 
+use num_bigint::BigInt;
 use std::str::FromStr;
 
 grammar<'input>;
@@ -114,7 +115,7 @@ VarDef: ast::VarDef =
 // EXPRESSIONS
 
 TypeBinding: ast::TypeBinding =
-    <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, value_type: t};
+    <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, ty: t};
 
 Type: ast::Type = {
     "[" <Type> "]" => ast::Type::Array(Box::new(<>)),
@@ -137,34 +138,34 @@ pub Expr: ast::Expr = {
 }
 
 AndExpr: ast::Expr = {
-    <l:AndExpr> "and" <r:OrExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::LogicalAnd, Box::new(r)),
+    <l:AndExpr> "and" <r:OrExpr> => ast::Expr::untyped(ast::ExprInner::Binary(Box::new(l), ast::BinOp::LogicalAnd, Box::new(r))),
     <OrExpr>,
 }
 
 OrExpr: ast::Expr = {
-    <l:OrExpr> "or" <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::LogicalOr, Box::new(r)),
+    <l:OrExpr> "or" <r:ArithmaticExpr> => ast::Expr::untyped(ast::ExprInner::Binary(Box::new(l), ast::BinOp::LogicalOr, Box::new(r))),
     <ArithmaticExpr>,
 }
 
 ArithmaticExpr: ast::Expr = {
-    <l:ArithmaticExpr> <op:AddOp> <r:Term> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
+    <l:ArithmaticExpr> <op:AddOp> <r:Term> => ast::Expr::untyped(ast::ExprInner::Binary(Box::new(l), op, Box::new(r))),
     <Term>,
 }
 
 Term: ast::Expr = {
-    <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
+    <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::untyped(ast::ExprInner::Binary(Box::new(l), op, Box::new(r))),
     <UnaryExpr>,
 }
 
 // Unary expressions:
 UnaryExpr: ast::Expr = {
-    <op:UnaryOp> <value:FunctionCall> => ast::Expr::Unary(op, Box::new(value)),
+    <op:UnaryOp> <value:FunctionCall> => ast::Expr::untyped(ast::ExprInner::Unary(op, Box::new(value))),
     <FunctionCall>,
 }
 
 // TODO: name could just be an identifier
 FunctionCall: ast::Expr = {
-    <name:FunctionCall> "(" <args:MaybeArgsList> ")" => ast::Expr::FunctionCall(ast::FunctionCall { name: Box::new(name), args: args}),
+    <name:FunctionCall> "(" <args:MaybeArgsList> ")" => ast::Expr::untyped(ast::ExprInner::FunctionCall(ast::FunctionCall { name: Box::new(name), args: args})),
     <PrimaryExpr>,
 }
 
@@ -176,10 +177,10 @@ ArgsList: Vec<ast::Expr> = {
 }
 
 PrimaryExpr: ast::Expr = {
-    <Ident> => ast::Expr::Ident(<>),
-    <Literal> => ast::Expr::Literal(<>),
-    "true" => ast::Expr::Literal(ast::Literal::True),
-    "false" => ast::Expr::Literal(ast::Literal::False),
+    <Ident> => ast::Expr::untyped(ast::ExprInner::Ident(<>)),
+    <IntLiteral> => ast::Expr::untyped(ast::ExprInner::Literal(<>)),
+    <StringLiteral> => ast::Expr::with_type(ast::Type::Str, ast::ExprInner::Literal(<>)),
+    <BooleanLiteral> => ast::Expr::with_type(ast::Type::Bool, ast::ExprInner::Literal(<>)),
     "(" <Expr> ")",
 }
 
@@ -199,15 +200,15 @@ UnaryOp: ast::UnaryOp = {
     "not" => ast::UnaryOp::Not,
 }
 
-Literal: ast::Literal = {
-    <IntLiteral>,
-    <StringLiteral>,
-}
-
 IntLiteral: ast::Literal =
-    <int> => ast::Literal::Int32(i32::from_str(<>).unwrap());
+    <int> => ast::Literal::untyped(ast::LiteralInner::Int(BigInt::from_str(<>).unwrap()));
 
 StringLiteral: ast::Literal =
-    <string> => ast::Literal::Str((<>[1..<>.len() - 1]).to_owned());
+    <string> => ast::Literal::with_type(ast::Type::Str, ast::LiteralInner::Str((<>[1..<>.len() - 1]).to_owned()));
+
+BooleanLiteral: ast::Literal = {
+    "true" => ast::Literal::with_type(ast::Type::Bool, ast::LiteralInner::Bool(true)),
+    "false" => ast::Literal::with_type(ast::Type::Bool, ast::LiteralInner::Bool(true)),
+}
 
 Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());

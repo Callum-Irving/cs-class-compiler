@@ -11,6 +11,8 @@ logos = "0.12.0"
 llvm-sys = "130"
 regex = "1"
 lalrpop-util = { version = "0.19.7", features = ["lexer"] }
+num-bigint = "0.4"
+num-traits = "0.2.15"
 
 [build-dependencies]
 lalrpop = "0.19.7"

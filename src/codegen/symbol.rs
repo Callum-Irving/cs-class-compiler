@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use llvm_sys::prelude::LLVMValueRef;
 use std::collections::HashMap;
 
@@ -24,7 +22,10 @@ impl ScopedSymbolTable {
 
     /// Adds a symbol to the last scope.
     pub fn add_symbol(&mut self, name: String, value: LLVMValueRef) -> Result<(), CodegenError> {
-        self.stack.last_mut().ok_or(CodegenError::EmptySymbolTable)?.insert(name, value);
+        self.stack
+            .last_mut()
+            .ok_or(CodegenError::EmptySymbolTable)?
+            .insert(name, value);
         Ok(())
     }
 

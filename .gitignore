@@ -1,1 +1,6 @@
 /target
+
+# LLVM Files
+*.bc
+*.ll
+*.out

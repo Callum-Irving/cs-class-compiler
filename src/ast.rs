@@ -1,3 +1,5 @@
+use num_bigint::BigInt;
+
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
@@ -61,7 +63,23 @@ pub struct VarDef {
 // EXPRESSIONS
 
 #[derive(Debug, Clone)]
-pub enum Expr {
+pub struct Expr {
+    pub ty: Option<Type>,
+    pub val: ExprInner,
+}
+
+impl Expr {
+    pub fn untyped(val: ExprInner) -> Expr {
+        Self { ty: None, val }
+    }
+
+    pub fn with_type(ty: Type, val: ExprInner) -> Expr {
+        Self { ty: Some(ty), val }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ExprInner {
     FunctionCall(FunctionCall),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
@@ -95,7 +113,7 @@ pub enum BinOp {
 #[derive(Debug, Clone)]
 pub struct TypeBinding {
     pub name: Ident,
-    pub value_type: Type,
+    pub ty: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -112,17 +130,31 @@ pub enum Type {
     UInt64,
     Char,
     Str,
+    Bool,
     Array(Box<Type>),
 }
 
-// TODO: Should only be one type of int literal
-// (since we can't tell the type when parsing).
 #[derive(Debug, Clone)]
-pub enum Literal {
-    Int32(i32),
+pub struct Literal {
+    pub ty: Option<Type>,
+    pub val: LiteralInner,
+}
+
+#[derive(Debug, Clone)]
+pub enum LiteralInner {
+    Int(BigInt),
     Str(String),
-    True,
-    False,
+    Bool(bool),
+}
+
+impl Literal {
+    pub fn untyped(val: LiteralInner) -> Literal {
+        Self { ty: None, val }
+    }
+
+    pub fn with_type(ty: Type, val: LiteralInner) -> Literal {
+        Self { ty: Some(ty), val }
+    }
 }
 
 #[derive(Debug, Clone)]

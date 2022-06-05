@@ -1,6 +1,7 @@
 mod ast;
 mod codegen;
 mod lexer;
+mod type_checker;
 
 use codegen::*;
 
@@ -393,6 +394,33 @@ mod tests {
     #[test]
     fn program_codegen() {
         let lex = Token::lexer(include_str!("../examples/puts.test"))
+            .spanned()
+            .map(Token::to_lalr_triple);
+        let ast = grammar::ProgramParser::new().parse(lex).unwrap();
+
+        unsafe {
+            use crate::codegen::Codegen;
+            use llvm_sys::core::*;
+
+            let mut compiler = crate::codegen::context::CompilerContext::new();
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+            LLVMSetTarget(module, c_str!("x86_64-pc-linux-gnu"));
+
+            let _ = ast.codegen(&mut compiler, context, module, builder);
+            LLVMPrintModuleToFile(module, c_str!("main.ll"), std::ptr::null_mut());
+            LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
+
+            LLVMDisposeBuilder(builder);
+            LLVMDisposeModule(module);
+            LLVMContextDispose(context);
+        }
+    }
+
+    #[test]
+    fn var_codegen() {
+        let lex = Token::lexer(include_str!("../examples/var.test"))
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::ProgramParser::new().parse(lex).unwrap();

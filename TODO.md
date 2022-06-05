@@ -10,5 +10,6 @@
 
 ## Big TODOs:
 
+- Parse escape strings
 - Type checker
 - Module system

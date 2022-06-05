@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod ast_codegen;
 pub mod context;
 mod symbol;
