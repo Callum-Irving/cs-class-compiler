@@ -59,6 +59,8 @@ fn main() {
         .spawn()
         .expect("Could not start clang");
 
+    // TODO: Wait for Clang to finish
+
     // Run the compiled binary
     Command::new("./a.out")
         .spawn()

@@ -19,6 +19,13 @@ fn infer_function_types(def: &mut ast::FunctionDef) {
 
 fn infer_stmt_types(stmt: &mut ast::Stmt) {
     match stmt {
+        ast::Stmt::ConstDef(def) => {
+            let ty = &def.binding.ty;
+            if def.value.ty.is_none() {
+                def.value.ty = Some(ty.clone());
+            }
+            infer_expr_types(&mut def.value);
+        }
         ast::Stmt::VarDef(def) => {
             let ty = &def.binding.ty;
             if def.value.ty.is_none() {

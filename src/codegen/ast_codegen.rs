@@ -1,4 +1,5 @@
 use super::context::CompilerContext;
+use super::symbol::{Symbol, SymbolType};
 use super::Codegen;
 use super::EMPTY_NAME;
 use crate::ast;
@@ -57,7 +58,9 @@ impl ast::ExternDef {
         let converted = CString::new(self.name.0.as_bytes()).unwrap();
 
         let func = LLVMAddFunction(module, converted.as_ptr() as *const i8, func_type);
-        ctx.symbols.add_symbol(self.name.0.clone(), func).unwrap();
+        ctx.symbols
+            .add_symbol(self.name.0.clone(), Symbol::new(func, SymbolType::Func))
+            .unwrap();
     }
 }
 
@@ -102,7 +105,9 @@ impl ast::FunctionDef {
         // Add arguments to current scope
         for (i, param) in self.params.iter().enumerate() {
             let value = LLVMGetParam(func, i as u32);
-            ctx.symbols.add_symbol(param.name.0.clone(), value).unwrap();
+            ctx.symbols
+                .add_symbol(param.name.0.clone(), Symbol::new(value, SymbolType::Const))
+                .unwrap();
         }
 
         for stmt in self.body.0.iter() {
@@ -116,7 +121,9 @@ impl ast::FunctionDef {
         }
 
         // Add function to symbol table so that it can be called.
-        ctx.symbols.add_symbol(self.name.0.clone(), func).unwrap();
+        ctx.symbols
+            .add_symbol(self.name.0.clone(), Symbol::new(func, SymbolType::Func))
+            .unwrap();
     }
 }
 
@@ -133,10 +140,28 @@ impl ast::Stmt {
             Stmt::ExprStmt(expr) => {
                 expr.codegen(ctx, llvm_context, module, builder);
             }
-            Stmt::VarDef(def) => {
+            Stmt::ConstDef(def) => {
                 let val = def.value.codegen(ctx, llvm_context, module, builder);
                 ctx.symbols
-                    .add_symbol(def.binding.name.0.clone(), val)
+                    .add_symbol(
+                        def.binding.name.0.clone(),
+                        Symbol::new(val, SymbolType::Const),
+                    )
+                    .unwrap();
+            }
+            Stmt::VarDef(def) => {
+                let alloca = LLVMBuildAlloca(
+                    builder,
+                    def.binding.ty.as_llvm_arr_type(llvm_context, &def.value),
+                    EMPTY_NAME,
+                );
+                let val = def.value.codegen(ctx, llvm_context, module, builder);
+                LLVMBuildStore(builder, val, alloca);
+                ctx.symbols
+                    .add_symbol(
+                        def.binding.name.0.clone(),
+                        Symbol::new(alloca, SymbolType::Var),
+                    )
                     .unwrap();
             }
             Stmt::ReturnStmt(expr) => {
@@ -158,6 +183,10 @@ impl Codegen for ast::Expr {
     ) -> llvm_sys::prelude::LLVMValueRef {
         use ast::ExprInner;
         match &self.val {
+            ExprInner::Array(arr, len) => {
+                let ty = self.ty.as_ref().unwrap().as_llvm_arr_type(context, &self);
+                LLVMBuildAlloca(builder, ty, EMPTY_NAME)
+            }
             ExprInner::FunctionCall(call) => {
                 let func = call.name.codegen(ctx, context, module, builder);
                 let args: Vec<LLVMValueRef> = call
@@ -205,7 +234,14 @@ impl Codegen for ast::Expr {
                 }
             }
             ExprInner::Literal(lit) => lit.codegen(ctx, context, module, builder),
-            ExprInner::Ident(ident) => *ctx.symbols.get_symbol(&ident.0).unwrap(),
+            ExprInner::Ident(ident) => {
+                let symbol = ctx.symbols.get_symbol(&ident.0).unwrap();
+                match symbol.ty {
+                    SymbolType::Const => symbol.value,
+                    SymbolType::Var => LLVMBuildLoad(builder, symbol.value, EMPTY_NAME),
+                    SymbolType::Func => symbol.value,
+                }
+            }
         }
     }
 }
@@ -273,6 +309,24 @@ impl ast::Type {
                 let inner_type = inner.as_llvm_type(context);
                 LLVMPointerType(inner_type, 0)
             }
+        }
+    }
+
+    unsafe fn as_llvm_arr_type(
+        &self,
+        context: *mut llvm_sys::LLVMContext,
+        expr: &ast::Expr,
+    ) -> LLVMTypeRef {
+        if let ast::Type::Array(inner_type) = &expr.ty.as_ref().unwrap() {
+            if let ast::ExprInner::Array(_, len) = &expr.val {
+                let inner_type = inner_type.as_llvm_type(context);
+                LLVMArrayType(inner_type, *len as c_uint)
+            } else {
+                panic!("UH OH");
+            }
+        } else {
+            // Get type of inner expression
+            expr.ty.as_ref().unwrap().as_llvm_type(context)
         }
     }
 }

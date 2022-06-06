@@ -136,7 +136,19 @@ Type: ast::Type = {
 }
 
 pub Expr: ast::Expr = {
+    "[" <ArrayExpr> "]",
     <AndExpr>,
+}
+
+ArrayExpr: ast::Expr = <ExprList?> => {
+    let items = <>.unwrap_or(vec![]);
+    let len = items.len();
+    ast::Expr::untyped(ast::ExprInner::Array(items, len))
+};
+
+ExprList: Vec<ast::Expr> = {
+    <mut a:ExprList> ","  <b:Expr> => {a.push(b); a},
+    <Expr> => vec![<>],
 }
 
 AndExpr: ast::Expr = {

@@ -84,6 +84,7 @@ pub enum ExprInner {
     FunctionCall(FunctionCall),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
+    Array(Vec<Expr>, usize),
     Literal(Literal),
     Ident(Ident),
 }

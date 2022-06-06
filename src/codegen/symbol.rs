@@ -3,8 +3,26 @@ use std::collections::HashMap;
 
 use super::CodegenError;
 
+#[derive(PartialEq)]
+pub enum SymbolType {
+    Const,
+    Var,
+    Func,
+}
+
+pub struct Symbol {
+    pub value: LLVMValueRef,
+    pub ty: SymbolType,
+}
+
+impl Symbol {
+    pub fn new(value: LLVMValueRef, ty: SymbolType) -> Self {
+        Self { value, ty }
+    }
+}
+
 pub struct ScopedSymbolTable {
-    stack: Vec<HashMap<String, LLVMValueRef>>,
+    stack: Vec<HashMap<String, Symbol>>,
 }
 
 impl ScopedSymbolTable {
@@ -16,12 +34,12 @@ impl ScopedSymbolTable {
     }
 
     /// Get a symbol by name. Returns the match in the most nested scope.
-    pub fn get_symbol(&self, name: &str) -> Option<&LLVMValueRef> {
+    pub fn get_symbol(&self, name: &str) -> Option<&Symbol> {
         self.stack.iter().rev().find_map(|map| map.get(name))
     }
 
     /// Adds a symbol to the last scope.
-    pub fn add_symbol(&mut self, name: String, value: LLVMValueRef) -> Result<(), CodegenError> {
+    pub fn add_symbol(&mut self, name: String, value: Symbol) -> Result<(), CodegenError> {
         self.stack
             .last_mut()
             .ok_or(CodegenError::EmptySymbolTable)?

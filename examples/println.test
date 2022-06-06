@@ -2,7 +2,7 @@ extern write(fd: int, buf: str, count: int) -> int;
 extern strlen(s: str) -> int;
 
 func println(buf: str) {
-    var len: int = strlen(buf);
+    const len: int = strlen(buf);
     write(1, buf, len);
     write(1, "\n", 1);
 }

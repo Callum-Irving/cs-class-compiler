@@ -38,6 +38,7 @@ impl CompilerContext {
 
         use std::ffi::CString;
         let name = CString::new(output_file).unwrap();
+        LLVMPrintModuleToFile(self.module, c_str!("main.ll"), std::ptr::null_mut());
         LLVMWriteBitcodeToFile(self.module, name.as_ptr() as *const i8);
     }
 }
