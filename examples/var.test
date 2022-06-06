@@ -3,5 +3,8 @@ extern write(fd: int, buf: str, count: int) -> int;
 func main() {
     var test: str = "5
 ";
+
+    var test2: uint = -11;
+
     write(1, test, 2);
 }

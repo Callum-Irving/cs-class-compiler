@@ -257,7 +257,7 @@ mod tests {
     use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
     use logos::Logos;
 
-    use crate::{grammar, lexer::Token};
+    use crate::{grammar, lexer::Token, type_checker::infer_types};
 
     #[test]
     fn math_parse() {
@@ -323,7 +323,6 @@ mod tests {
         let ast = grammar::FunctionDefParser::new().parse(lex).unwrap();
 
         unsafe {
-            use crate::codegen::Codegen;
             use llvm_sys::core::*;
 
             let mut compiler = crate::codegen::context::CompilerContext::new();
@@ -331,7 +330,7 @@ mod tests {
             let module = LLVMModuleCreateWithName(c_str!("main"));
             let builder = LLVMCreateBuilderInContext(context);
 
-            let value = ast.codegen(&mut compiler, context, module, builder);
+            ast.codegen(&mut compiler, context, module, builder);
             // let ir = LLVMPrintValueToString(value);
             let ir = LLVMPrintModuleToString(module);
             use std::ffi::CStr;
@@ -361,7 +360,6 @@ mod tests {
         let ast = grammar::ProgramParser::new().parse(lex).unwrap();
 
         unsafe {
-            use crate::codegen::Codegen;
             use llvm_sys::core::*;
 
             let mut compiler = crate::codegen::context::CompilerContext::new();
@@ -369,7 +367,7 @@ mod tests {
             let module = LLVMModuleCreateWithName(c_str!("main"));
             let builder = LLVMCreateBuilderInContext(context);
 
-            let value = ast.codegen(&mut compiler, context, module, builder);
+            ast.codegen(&mut compiler, context, module, builder);
             // let ir = LLVMPrintValueToString(value);
             let ir = LLVMPrintModuleToString(module);
             use std::ffi::CStr;
@@ -399,7 +397,6 @@ mod tests {
         let ast = grammar::ProgramParser::new().parse(lex).unwrap();
 
         unsafe {
-            use crate::codegen::Codegen;
             use llvm_sys::core::*;
 
             let mut compiler = crate::codegen::context::CompilerContext::new();
@@ -408,7 +405,7 @@ mod tests {
             let builder = LLVMCreateBuilderInContext(context);
             LLVMSetTarget(module, c_str!("x86_64-pc-linux-gnu"));
 
-            let _ = ast.codegen(&mut compiler, context, module, builder);
+            ast.codegen(&mut compiler, context, module, builder);
             LLVMPrintModuleToFile(module, c_str!("main.ll"), std::ptr::null_mut());
             LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
 
@@ -420,13 +417,12 @@ mod tests {
 
     #[test]
     fn var_codegen() {
-        let lex = Token::lexer(include_str!("../examples/var.test"))
+        let lex = Token::lexer(include_str!("../examples/println.test"))
             .spanned()
             .map(Token::to_lalr_triple);
         let ast = grammar::ProgramParser::new().parse(lex).unwrap();
 
         unsafe {
-            use crate::codegen::Codegen;
             use llvm_sys::core::*;
 
             let mut compiler = crate::codegen::context::CompilerContext::new();
@@ -435,7 +431,8 @@ mod tests {
             let builder = LLVMCreateBuilderInContext(context);
             LLVMSetTarget(module, c_str!("x86_64-pc-linux-gnu"));
 
-            let _ = ast.codegen(&mut compiler, context, module, builder);
+            let ast = infer_types(ast);
+            ast.codegen(&mut compiler, context, module, builder);
             LLVMPrintModuleToFile(module, c_str!("main.ll"), std::ptr::null_mut());
             LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
 

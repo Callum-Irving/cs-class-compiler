@@ -30,7 +30,7 @@ impl ScopedSymbolTable {
     }
 
     /// Add an empty scope to the symbol table.
-    pub fn add_scope(&mut self) {
+    pub fn push_scope(&mut self) {
         self.stack.push(HashMap::new());
     }
 

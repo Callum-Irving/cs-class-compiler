@@ -31,6 +31,7 @@ pub enum Stmt {
     WhileStmt(WhileStmt),
     ConstDef(ConstDef),
     VarDef(VarDef),
+    ReturnStmt(Expr),
 }
 
 #[derive(Debug)]

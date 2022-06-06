@@ -21,6 +21,7 @@ extern {
         "->" => lexer::Token::Arrow,
         "func" => lexer::Token::Func,
         "extern" => lexer::Token::Extern,
+        "return" => lexer::Token::Return,
 
         "&" => lexer::Token::Ampersand,
         "," => lexer::Token::Comma,
@@ -88,6 +89,7 @@ ParamsList: Vec<ast::TypeBinding> = {
 // STATEMENTS
 
 pub Stmt: ast::Stmt = {
+    "return" <Expr> ";" => ast::Stmt::ReturnStmt(<>),
     <Expr> ";" => ast::Stmt::ExprStmt(<>),
     <BlockStmt> => ast::Stmt::BlockStmt(<>),
     <IfStmt>,

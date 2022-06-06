@@ -26,6 +26,14 @@ fn infer_stmt_types(stmt: &mut ast::Stmt) {
             }
             infer_expr_types(&mut def.value);
         }
+        ast::Stmt::BlockStmt(block) => {
+            for stmt in block.0.iter_mut() {
+                infer_stmt_types(stmt);
+            }
+        }
+        ast::Stmt::ExprStmt(expr) => {
+            infer_expr_types(expr);
+        }
         _ => todo!(),
     }
 }
@@ -37,6 +45,7 @@ fn infer_expr_types(expr: &mut ast::Expr) {
                 lit.ty = expr.ty.clone();
             }
         }
+        ast::ExprInner::FunctionCall(call) => (),
         _ => todo!(),
     }
 }

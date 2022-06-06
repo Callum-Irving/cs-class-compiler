@@ -13,3 +13,4 @@
 - Parse escape strings
 - Type checker
 - Module system
+- Add return statement

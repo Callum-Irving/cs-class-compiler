@@ -10,37 +10,34 @@ use llvm_sys::prelude::LLVMValueRef;
 use num_traits::cast::ToPrimitive;
 use std::os::raw::{c_uint, c_ulonglong};
 
-impl Codegen for ast::Program {
-    unsafe fn codegen(
+impl ast::Program {
+    pub unsafe fn codegen(
         &self,
         ctx: &mut CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) -> llvm_sys::prelude::LLVMValueRef {
+    ) {
         for stmt in self.0.iter() {
             use ast::TopLevelStmt;
 
-            let _ = match stmt {
-                TopLevelStmt::ConstDef(def) => todo!(),
+            match stmt {
+                TopLevelStmt::ConstDef(_def) => todo!(),
                 TopLevelStmt::ExternDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::FunctionDef(def) => def.codegen(ctx, context, module, builder),
             };
         }
-
-        use llvm_sys::LLVMValue;
-        return std::ptr::null::<LLVMValue>() as LLVMValueRef;
     }
 }
 
-impl Codegen for ast::ExternDef {
-    unsafe fn codegen(
+impl ast::ExternDef {
+    pub unsafe fn codegen(
         &self,
         ctx: &mut super::context::CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
-    ) -> LLVMValueRef {
+    ) {
         let args: Vec<LLVMTypeRef> = self
             .params
             .iter()
@@ -61,18 +58,17 @@ impl Codegen for ast::ExternDef {
 
         let func = LLVMAddFunction(module, converted.as_ptr() as *const i8, func_type);
         ctx.symbols.add_symbol(self.name.0.clone(), func).unwrap();
-        func
     }
 }
 
-impl Codegen for ast::FunctionDef {
-    unsafe fn codegen(
+impl ast::FunctionDef {
+    pub unsafe fn codegen(
         &self,
         ctx: &mut super::context::CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) -> llvm_sys::prelude::LLVMValueRef {
+    ) {
         // Turn args into vec of llvm types
         let args: Vec<LLVMTypeRef> = self
             .params
@@ -101,16 +97,26 @@ impl Codegen for ast::FunctionDef {
         let block = LLVMAppendBasicBlockInContext(context, func, c_str!(""));
         LLVMPositionBuilderAtEnd(builder, block);
 
+        ctx.symbols.push_scope();
+
+        // Add arguments to current scope
+        for (i, param) in self.params.iter().enumerate() {
+            let value = LLVMGetParam(func, i as u32);
+            ctx.symbols.add_symbol(param.name.0.clone(), value).unwrap();
+        }
+
         for stmt in self.body.0.iter() {
             stmt.codegen(ctx, context, module, builder);
         }
+        ctx.symbols.pop_scope().unwrap();
 
+        // Add ret void if it is a void function so that LLVM is happy.
         if self.return_type.is_none() {
             LLVMBuildRetVoid(builder);
         }
 
+        // Add function to symbol table so that it can be called.
         ctx.symbols.add_symbol(self.name.0.clone(), func).unwrap();
-        func
     }
 }
 
@@ -132,6 +138,10 @@ impl ast::Stmt {
                 ctx.symbols
                     .add_symbol(def.binding.name.0.clone(), val)
                     .unwrap();
+            }
+            Stmt::ReturnStmt(expr) => {
+                let value = expr.codegen(ctx, llvm_context, module, builder);
+                LLVMBuildRet(builder, value);
             }
             _ => todo!("not implemented for stmt"),
         }
