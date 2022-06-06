@@ -11,7 +11,7 @@ extern {
     type Error = lexer::Error;
 
     enum lexer::Token<'input> {
-        string => lexer::Token::StringLiteral(<&'input str>),
+        string => lexer::Token::StringLiteral(<String>),
         int => lexer::Token::IntLiteral(<&'input str>),
         ident => lexer::Token::Ident(<&'input str>),
         // "\n" => lexer::Token::Newline,
@@ -206,7 +206,7 @@ IntLiteral: ast::Literal =
     <int> => ast::Literal::untyped(ast::LiteralInner::Int(BigInt::from_str(<>).unwrap()));
 
 StringLiteral: ast::Literal =
-    <string> => ast::Literal::with_type(ast::Type::Str, ast::LiteralInner::Str((<>[1..<>.len() - 1]).to_owned()));
+    <string> => ast::Literal::with_type(ast::Type::Str, ast::LiteralInner::Str(<>));
 
 BooleanLiteral: ast::Literal = {
     "true" => ast::Literal::with_type(ast::Type::Bool, ast::LiteralInner::Bool(true)),

@@ -1,11 +1,12 @@
 extern write(fd: int, buf: str, count: int) -> int;
+extern strlen(s: str) -> int;
 
-func println(buf: str, len: int) {
+func println(buf: str) {
+    var len: int = strlen(buf);
     write(1, buf, len);
-    write(1, "
-", 1);
+    write(1, "\n", 1);
 }
 
 func main() {
-    println("Hello, world!", 13);
+    println("Hello, world!");
 }

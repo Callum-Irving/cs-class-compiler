@@ -1,10 +1,10 @@
-use logos::Logos;
+use logos::{Lexer, Logos};
 use std::ops::Range;
 
 #[derive(Logos, Clone, Debug, PartialEq)]
 pub enum Token<'a> {
-    #[regex(r#""([^"\\]|\\.)*""#)]
-    StringLiteral(&'a str),
+    #[regex(r#""([^"\\]|\\.)*""#, unescape_string)]
+    StringLiteral(String),
 
     #[token("func")]
     Func,
@@ -193,6 +193,34 @@ pub enum Token<'a> {
 
     #[error]
     Error,
+}
+
+fn unescape_string<'a>(lex: &mut Lexer<'a, Token<'a>>) -> String {
+    let full = lex.slice();
+    let without_quotes = &full[1..full.len() - 1];
+    let s = without_quotes.to_owned();
+    let mut chars = s.chars();
+
+    let mut res = String::with_capacity(s.len());
+
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            // Parse escaped character
+            // TODO: Handle invalid escapes
+            res.push(match chars.next().unwrap() {
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                '\\' => '\\',
+                '"' => '"',
+                other => panic!("Invalid string escape character: {}", other),
+            });
+        } else {
+            res.push(c);
+        }
+    }
+
+    res
 }
 
 impl<'a> Token<'a> {

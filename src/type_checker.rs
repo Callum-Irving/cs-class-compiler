@@ -45,7 +45,7 @@ fn infer_expr_types(expr: &mut ast::Expr) {
                 lit.ty = expr.ty.clone();
             }
         }
-        ast::ExprInner::FunctionCall(call) => (),
+        ast::ExprInner::FunctionCall(_call) => (),
         _ => todo!(),
     }
 }
