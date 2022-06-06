@@ -1,8 +1,8 @@
 use super::context::CompilerContext;
 use super::Codegen;
+use super::EMPTY_NAME;
 use crate::ast;
 use crate::c_str;
-use crate::EMPTY_NAME;
 
 use llvm_sys::core::*;
 use llvm_sys::prelude::LLVMTypeRef;

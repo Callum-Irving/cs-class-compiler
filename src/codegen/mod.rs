@@ -2,12 +2,19 @@ mod ast_codegen;
 pub mod context;
 mod symbol;
 
-use crate::c_str;
-
 use llvm_sys::core::*;
 use llvm_sys::prelude::LLVMValueRef;
 use llvm_sys::{LLVMBuilder, LLVMContext, LLVMModule};
 use std::os::raw::c_ulonglong;
+
+#[macro_export]
+macro_rules! c_str {
+    ($s:expr) => {
+        concat!($s, "\0").as_ptr() as *const i8
+    };
+}
+
+pub const EMPTY_NAME: *const i8 = c_str!("");
 
 pub trait Codegen {
     unsafe fn codegen(
