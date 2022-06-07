@@ -1,10 +1,16 @@
 extern write(fd: int, buf: str, count: int) -> int;
 extern strlen(s: str) -> int;
 
-func println(buf: str) {
+func println(buf: str) -> int {
     const len: int = strlen(buf);
-    write(1, buf, len);
+    const written: int = write(1, buf, len);
     write(1, "\n", 1);
+    return written;
+}
+
+func print_char(c: int) {
+    const ascii: int = c + 65;
+    write(1, &c as *int8, 1);
 }
 
 func main() {

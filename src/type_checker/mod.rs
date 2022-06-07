@@ -1,3 +1,5 @@
+pub mod typed_ast;
+
 use crate::ast;
 
 pub fn infer_types(mut program: ast::Program) -> ast::Program {
@@ -41,6 +43,9 @@ fn infer_stmt_types(stmt: &mut ast::Stmt) {
         ast::Stmt::ExprStmt(expr) => {
             infer_expr_types(expr);
         }
+        ast::Stmt::ReturnStmt(expr) => {
+            infer_expr_types(expr);
+        }
         _ => todo!(),
     }
 }
@@ -53,6 +58,11 @@ fn infer_expr_types(expr: &mut ast::Expr) {
             }
         }
         ast::ExprInner::FunctionCall(_call) => (),
+        ast::ExprInner::Ident(_name) => (),
+        ast::ExprInner::Binary(lhs, _op, rhs) => {
+            infer_expr_types(lhs);
+            infer_expr_types(rhs);
+        }
         _ => todo!(),
     }
 }

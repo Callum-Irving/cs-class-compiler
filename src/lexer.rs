@@ -102,6 +102,9 @@ pub enum Token<'a> {
     #[token("or")]
     Or,
 
+    #[token("as")]
+    As,
+
     #[token("true")]
     True,
 

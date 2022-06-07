@@ -4,21 +4,23 @@ pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
     FunctionDef(FunctionDef),
-    ConstDef(ConstDef),
     ExternDef(ExternDef),
+    ConstDef(GlobalConstDef),
 }
+
+// TOP LEVEL STATEMENTS
 
 pub struct FunctionDef {
     pub name: String,
     pub params: Vec<TypeBinding>,
-    pub return_type: Option<Type>,
+    pub return_type: Type,
     pub body: BlockStmt,
 }
 
 pub struct ExternDef {
     pub name: String,
     pub params: Vec<TypeBinding>,
-    pub return_type: Option<Type>,
+    pub return_type: Type,
 }
 
 pub struct GlobalConstDef {
@@ -28,7 +30,6 @@ pub struct GlobalConstDef {
 
 // STATEMENTS
 
-#[derive(Debug)]
 pub enum Stmt {
     ExprStmt(Expr),
     BlockStmt(BlockStmt),
@@ -39,28 +40,25 @@ pub enum Stmt {
     ReturnStmt(Expr),
 }
 
-#[derive(Debug)]
-pub struct BlockStmt(pub Vec<Stmt>);
+pub struct BlockStmt {
+    pub inners: Vec<Stmt>,
+}
 
-#[derive(Debug)]
 pub struct IfStmt {
     pub condition: Expr,
     pub body: BlockStmt,
 }
 
-#[derive(Debug)]
 pub struct WhileStmt {
     pub condition: Expr,
     pub body: BlockStmt,
 }
 
-#[derive(Debug)]
 pub struct ConstDef {
     pub binding: TypeBinding,
     pub value: Expr,
 }
 
-#[derive(Debug)]
 pub struct VarDef {
     pub binding: TypeBinding,
     pub value: Expr,
@@ -68,48 +66,53 @@ pub struct VarDef {
 
 // EXPRESSIONS
 
-#[derive(Debug, Clone)]
 pub struct Expr {
-    pub ty: Option<Type>,
+    pub ty: Type,
     pub val: ExprInner,
 }
 
-impl Expr {
-    pub fn untyped(val: ExprInner) -> Expr {
-        Self { ty: None, val }
-    }
-
-    pub fn with_type(ty: Type, val: ExprInner) -> Expr {
-        Self { ty: Some(ty), val }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub enum ExprInner {
     FunctionCall(FunctionCall),
-    IndexExpr(Box<Expr>, Box<Expr>),
-    Binary(Box<Expr>, BinOp, Box<Expr>),
-    Unary(UnaryOp, Box<Expr>),
-    Array(Vec<Expr>, usize),
-    Cast(Box<Expr>, Type),
+    IndexExpr(IndexExpr),
+    Binary(BinaryExpr),
+    Unary(UnaryExpr),
+    Array(ArrayExpr),
+    Cast(CastExpr),
     Literal(Literal),
     Ident(String),
 }
 
-#[derive(Debug, Clone)]
 pub struct FunctionCall {
     pub name: Box<Expr>,
     pub args: Vec<Expr>,
 }
 
-#[derive(Debug, Clone)]
-pub enum UnaryOp {
-    Reference,
-    Minus,
-    Not,
+pub struct IndexExpr {
+    pub name: Box<Expr>,
+    pub index: Box<Expr>,
 }
 
-#[derive(Debug, Clone)]
+pub struct BinaryExpr {
+    pub lhs: Box<Expr>,
+    pub rhs: Box<Expr>,
+    pub op: BinOp,
+}
+
+pub struct UnaryExpr {
+    pub data: Box<Expr>,
+    pub op: UnaryOp,
+}
+
+pub struct ArrayExpr {
+    pub items: Vec<Expr>,
+    pub len: usize,
+}
+
+pub struct CastExpr {
+    pub original: Box<Expr>,
+    pub to_type: Type,
+}
+
 pub enum BinOp {
     Plus,
     Minus,
@@ -119,13 +122,30 @@ pub enum BinOp {
     LogicalOr,
 }
 
-#[derive(Debug, Clone)]
+pub enum UnaryOp {
+    Reference,
+    Minus,
+    Not,
+}
+
+// LITERALS
+
+pub struct Literal {
+    pub ty: Type,
+    pub val: LiteralInner,
+}
+
+pub enum LiteralInner {
+    Int(BigInt),
+    Str(String),
+    Bool(bool),
+}
+
 pub struct TypeBinding {
     pub name: String,
     pub ty: Type,
 }
 
-#[derive(Debug, Clone)]
 pub enum Type {
     Array(Box<Type>),
     Ref(Box<Type>),
@@ -134,7 +154,6 @@ pub enum Type {
     Int16,
     Int32,
     Int64,
-    UInt,
     UInt8,
     UInt16,
     UInt32,
@@ -142,27 +161,5 @@ pub enum Type {
     Char,
     Str,
     Bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct Literal {
-    pub ty: Option<Type>,
-    pub val: LiteralInner,
-}
-
-#[derive(Debug, Clone)]
-pub enum LiteralInner {
-    Int(BigInt),
-    Str(String),
-    Bool(bool),
-}
-
-impl Literal {
-    pub fn untyped(val: LiteralInner) -> Literal {
-        Self { ty: None, val }
-    }
-
-    pub fn with_type(ty: Type, val: LiteralInner) -> Literal {
-        Self { ty: Some(ty), val }
-    }
+    NoneType,
 }

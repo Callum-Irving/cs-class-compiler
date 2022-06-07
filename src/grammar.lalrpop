@@ -16,6 +16,7 @@ extern {
         ident => lexer::Token::Ident(<&'input str>),
         // "\n" => lexer::Token::Newline,
 
+        "as" => lexer::Token::As,
         "const" => lexer::Token::Const,
         "var" => lexer::Token::Var,
         "->" => lexer::Token::Arrow,
@@ -121,6 +122,7 @@ TypeBinding: ast::TypeBinding =
 
 Type: ast::Type = {
     "[" <Type> "]" => ast::Type::Array(Box::new(<>)),
+    "*" <Type> => ast::Type::Ref(Box::new(<>)),
     "int" => ast::Type::Int,
     "int8" => ast::Type::Int8,
     "int16" => ast::Type::Int16,
@@ -168,6 +170,11 @@ ArithmaticExpr: ast::Expr = {
 
 Term: ast::Expr = {
     <l:Term> <op:MulOp> <r:PrimaryExpr> => ast::Expr::untyped(ast::ExprInner::Binary(Box::new(l), op, Box::new(r))),
+    <CastExpr>,
+}
+
+CastExpr: ast::Expr = {
+    <l:UnaryExpr> "as" <t:Type> => ast::Expr::untyped(ast::ExprInner::Cast(Box::new(l), t)),
     <UnaryExpr>,
 }
 
@@ -180,6 +187,11 @@ UnaryExpr: ast::Expr = {
 // TODO: name could just be an identifier
 FunctionCall: ast::Expr = {
     <name:FunctionCall> "(" <args:MaybeArgsList> ")" => ast::Expr::untyped(ast::ExprInner::FunctionCall(ast::FunctionCall { name: Box::new(name), args: args})),
+    <IndexExpr>,
+}
+
+IndexExpr: ast::Expr = {
+    <name:IndexExpr> "[" <index:Expr> "]" => ast::Expr::untyped(ast::ExprInner::IndexExpr(Box::new(name), Box::new(index))),
     <PrimaryExpr>,
 }
 
@@ -225,4 +237,4 @@ BooleanLiteral: ast::Literal = {
     "false" => ast::Literal::with_type(ast::Type::Bool, ast::LiteralInner::Bool(true)),
 }
 
-Ident: ast::Ident = <ident> => ast::Ident(<>.to_owned());
+Ident: String = <ident> => <>.to_owned();

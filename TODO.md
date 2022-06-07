@@ -9,6 +9,7 @@
 - [ ] Variadic functions
 - [ ] Distinction between C strings and non null-terminated strings
 - [ ] Some sort of string / char array
+- [ ] If / else if / else chaining
 - [x] Bigint for int type when parsing
 
 ## Big TODOs

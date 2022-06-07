@@ -48,9 +48,12 @@ fn main() {
 
     // Compile to LLVM Bitcode
     let mut compiler = CompilerContext::new();
+    println!("Writing code to file");
     unsafe {
         compiler.compile_to_file(ast, "output.bc");
     }
+
+    println!("Wrote code to files");
 
     // Use clang to compile LLVM Bitcode to native binary
     Command::new("clang")

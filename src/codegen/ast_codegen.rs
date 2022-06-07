@@ -55,11 +55,11 @@ impl ast::ExternDef {
 
         // Convert name to C string
         use std::ffi::CString;
-        let converted = CString::new(self.name.0.as_bytes()).unwrap();
+        let converted = CString::new(self.name.as_bytes()).unwrap();
 
         let func = LLVMAddFunction(module, converted.as_ptr() as *const i8, func_type);
         ctx.symbols
-            .add_symbol(self.name.0.clone(), Symbol::new(func, SymbolType::Func))
+            .add_symbol(self.name.clone(), Symbol::new(func, SymbolType::Func))
             .unwrap();
     }
 }
@@ -94,7 +94,7 @@ impl ast::FunctionDef {
 
         // Convert name to a C string
         use std::ffi::CString;
-        let converted = CString::new(self.name.0.as_bytes()).unwrap();
+        let converted = CString::new(self.name.as_bytes()).unwrap();
 
         let func = LLVMAddFunction(module, converted.as_ptr() as *const i8, func_type);
         let block = LLVMAppendBasicBlockInContext(context, func, c_str!(""));
@@ -104,9 +104,11 @@ impl ast::FunctionDef {
 
         // Add arguments to current scope
         for (i, param) in self.params.iter().enumerate() {
+            let alloca = LLVMBuildAlloca(builder, param.ty.as_llvm_type(context), EMPTY_NAME);
             let value = LLVMGetParam(func, i as u32);
+            LLVMBuildStore(builder, value, alloca);
             ctx.symbols
-                .add_symbol(param.name.0.clone(), Symbol::new(value, SymbolType::Const))
+                .add_symbol(param.name.clone(), Symbol::new(alloca, SymbolType::Const))
                 .unwrap();
         }
 
@@ -122,7 +124,7 @@ impl ast::FunctionDef {
 
         // Add function to symbol table so that it can be called.
         ctx.symbols
-            .add_symbol(self.name.0.clone(), Symbol::new(func, SymbolType::Func))
+            .add_symbol(self.name.clone(), Symbol::new(func, SymbolType::Func))
             .unwrap();
     }
 }
@@ -141,13 +143,27 @@ impl ast::Stmt {
                 expr.codegen(ctx, llvm_context, module, builder);
             }
             Stmt::ConstDef(def) => {
+                println!("Building const stmt");
+                let alloca = LLVMBuildAlloca(
+                    builder,
+                    def.binding.ty.as_llvm_arr_type(llvm_context, &def.value),
+                    EMPTY_NAME,
+                );
                 let val = def.value.codegen(ctx, llvm_context, module, builder);
+                let c_s = LLVMPrintValueToString(val);
+                use std::ffi::CStr;
+                let c_st = CStr::from_ptr(c_s);
+                let st = c_st.to_str().unwrap();
+                println!("Codegened value: {}", st);
+                LLVMBuildStore(builder, val, alloca);
+                println!("Built store");
                 ctx.symbols
                     .add_symbol(
-                        def.binding.name.0.clone(),
-                        Symbol::new(val, SymbolType::Const),
+                        def.binding.name.clone(),
+                        Symbol::new(alloca, SymbolType::Const),
                     )
                     .unwrap();
+                println!("Done with const stmt");
             }
             Stmt::VarDef(def) => {
                 let alloca = LLVMBuildAlloca(
@@ -159,7 +175,7 @@ impl ast::Stmt {
                 LLVMBuildStore(builder, val, alloca);
                 ctx.symbols
                     .add_symbol(
-                        def.binding.name.0.clone(),
+                        def.binding.name.clone(),
                         Symbol::new(alloca, SymbolType::Var),
                     )
                     .unwrap();
@@ -186,6 +202,9 @@ impl Codegen for ast::Expr {
             ExprInner::Array(arr, len) => {
                 let ty = self.ty.as_ref().unwrap().as_llvm_arr_type(context, &self);
                 LLVMBuildAlloca(builder, ty, EMPTY_NAME)
+            }
+            ExprInner::IndexExpr(name, index) => {
+                todo!();
             }
             ExprInner::FunctionCall(call) => {
                 let func = call.name.codegen(ctx, context, module, builder);
@@ -228,16 +247,23 @@ impl Codegen for ast::Expr {
                 let data_val = data.codegen(ctx, context, module, builder);
                 use ast::UnaryOp;
                 match op {
-                    UnaryOp::Reference => todo!(),
+                    UnaryOp::Reference => data_val,
                     UnaryOp::Minus => LLVMBuildNeg(builder, data_val, EMPTY_NAME),
                     UnaryOp::Not => LLVMBuildNot(builder, data_val, EMPTY_NAME),
                 }
             }
+            ExprInner::Cast(original, ty) => LLVMBuildCast(
+                builder,
+                llvm_sys::LLVMOpcode::LLVMSExt,
+                original.codegen(ctx, context, module, builder),
+                ty.as_llvm_type(context),
+                EMPTY_NAME,
+            ),
             ExprInner::Literal(lit) => lit.codegen(ctx, context, module, builder),
             ExprInner::Ident(ident) => {
-                let symbol = ctx.symbols.get_symbol(&ident.0).unwrap();
+                let symbol = ctx.symbols.get_symbol(&ident).unwrap();
                 match symbol.ty {
-                    SymbolType::Const => symbol.value,
+                    SymbolType::Const => LLVMBuildLoad(builder, symbol.value, EMPTY_NAME),
                     SymbolType::Var => LLVMBuildLoad(builder, symbol.value, EMPTY_NAME),
                     SymbolType::Func => symbol.value,
                 }
@@ -306,6 +332,10 @@ impl ast::Type {
                 LLVMPointerType(i8_type, 0)
             }
             Type::Array(inner) => {
+                let inner_type = inner.as_llvm_type(context);
+                LLVMPointerType(inner_type, 0)
+            }
+            Type::Ref(inner) => {
                 let inner_type = inner.as_llvm_type(context);
                 LLVMPointerType(inner_type, 0)
             }
