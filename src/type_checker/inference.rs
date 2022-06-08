@@ -42,7 +42,7 @@ impl ToTyped for ast::FunctionDef {
 
     fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
         let name = self.name;
-        let params = self
+        let params: Vec<typed_ast::TypeBinding> = self
             .params
             .into_iter()
             .map(|binding| binding.to_typed(names))
@@ -52,9 +52,16 @@ impl ToTyped for ast::FunctionDef {
             .map(|t| t.to_typed(names))
             .unwrap_or(typed_ast::Type::NoneType);
 
-        let body = self.body.to_typed(names);
-
         names.add_symbol(name.clone(), return_type.clone()).unwrap();
+
+        names.push_scope();
+        for param in params.iter() {
+            names
+                .add_symbol(param.name.clone(), param.ty.clone())
+                .unwrap();
+        }
+        let body = self.body.to_typed(names);
+        names.pop_scope().unwrap();
 
         typed_ast::FunctionDef {
             name,
@@ -248,7 +255,7 @@ impl ToTyped for ast::Expr {
                 // TODO: Handle error better
                 let ty = names
                     .get_symbol(&ident)
-                    .expect("Could not find ident")
+                    .expect(format!("Could not find ident: {}", ident).as_str())
                     .clone();
                 typed_ast::Expr {
                     ty: ty.clone(),

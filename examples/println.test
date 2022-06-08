@@ -8,11 +8,6 @@ func println(buf: str) -> int {
     return written;
 }
 
-func print_char(c: int) {
-    const ascii: int = c + 65;
-    write(1, &c as *int8, 1);
-}
-
 func main() {
     println("Hello, world!");
 }
