@@ -188,8 +188,37 @@ pub enum Token<'a> {
     #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]*"#)]
     Ident(&'a str),
 
+    // #[regex(r#"-?[0-9]+"#)]
+    // IntLiteral(&'a str),
     #[regex(r#"-?[0-9]+"#)]
-    IntLiteral(&'a str),
+    IntLit(&'a str),
+
+    #[regex(r#"[0-9]+_u"#)]
+    UIntLit(&'a str),
+
+    #[regex(r#"-?[0-9]+_i8"#)]
+    Int8Lit(&'a str),
+
+    #[regex(r#"-?[0-9]+_i16"#)]
+    Int16Lit(&'a str),
+
+    #[regex(r#"-?[0-9]+_i32"#)]
+    Int32Lit(&'a str),
+
+    #[regex(r#"-?[0-9]+_i64"#)]
+    Int64Lit(&'a str),
+
+    #[regex(r#"[0-9]+_u8"#)]
+    UInt8Lit(&'a str),
+
+    #[regex(r#"[0-9]+_u16"#)]
+    UInt16Lit(&'a str),
+
+    #[regex(r#"[0-9]+_u32"#)]
+    UInt32Lit(&'a str),
+
+    #[regex(r#"[0-9]+_u64"#)]
+    UInt64Lit(&'a str),
 
     #[regex(r"[ \t\r\n]+", logos::skip)]
     Whitespace,

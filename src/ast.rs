@@ -1,10 +1,8 @@
-use num_bigint::BigInt;
-
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
     FunctionDef(FunctionDef),
-    ConstDef(ConstDef),
+    ConstDef(GlobalConstDef),
     ExternDef(ExternDef),
 }
 
@@ -69,23 +67,7 @@ pub struct VarDef {
 // EXPRESSIONS
 
 #[derive(Debug, Clone)]
-pub struct Expr {
-    pub ty: Option<Type>,
-    pub val: ExprInner,
-}
-
-impl Expr {
-    pub fn untyped(val: ExprInner) -> Expr {
-        Self { ty: None, val }
-    }
-
-    pub fn with_type(ty: Type, val: ExprInner) -> Expr {
-        Self { ty: Some(ty), val }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ExprInner {
+pub enum Expr {
     FunctionCall(FunctionCall),
     IndexExpr(Box<Expr>, Box<Expr>),
     Binary(Box<Expr>, BinOp, Box<Expr>),
@@ -127,7 +109,7 @@ pub struct TypeBinding {
 
 #[derive(Debug, Clone)]
 pub enum Type {
-    Array(Box<Type>),
+    Array(Box<Type>, usize),
     Ref(Box<Type>),
     Int,
     Int8,
@@ -145,24 +127,17 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone)]
-pub struct Literal {
-    pub ty: Option<Type>,
-    pub val: LiteralInner,
-}
-
-#[derive(Debug, Clone)]
-pub enum LiteralInner {
-    Int(BigInt),
+pub enum Literal {
+    Int(i32),
+    UInt(u32),
+    Int8(i8),
+    Int16(i16),
+    Int32(i32),
+    Int64(i64),
+    UInt8(i8),
+    UInt16(i16),
+    UInt32(i32),
+    UInt64(i64),
     Str(String),
     Bool(bool),
-}
-
-impl Literal {
-    pub fn untyped(val: LiteralInner) -> Literal {
-        Self { ty: None, val }
-    }
-
-    pub fn with_type(ty: Type, val: LiteralInner) -> Literal {
-        Self { ty: Some(ty), val }
-    }
 }

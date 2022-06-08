@@ -1,14 +1,14 @@
-use super::symbol::ScopedSymbolTable;
+use super::symbol::{ScopedSymbolTable, Symbol};
 use crate::ast::Program;
 use crate::c_str;
-use crate::type_checker::infer_types;
+use crate::type_checker::inference::infer_types_pass;
 
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
 use llvm_sys::{LLVMBuilder, LLVMContext, LLVMModule};
 
 pub struct CompilerContext {
-    pub symbols: ScopedSymbolTable,
+    pub symbols: ScopedSymbolTable<Symbol>,
     context: *mut LLVMContext,
     module: *mut LLVMModule,
     builder: *mut LLVMBuilder,
@@ -32,7 +32,7 @@ impl CompilerContext {
     }
 
     pub unsafe fn compile_to_file(&mut self, ast: Program, output_file: &str) {
-        let ast = infer_types(ast);
+        let ast = infer_types_pass(ast);
 
         ast.codegen(self, self.context, self.module, self.builder);
 

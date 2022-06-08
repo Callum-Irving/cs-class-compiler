@@ -21,11 +21,11 @@ impl Symbol {
     }
 }
 
-pub struct ScopedSymbolTable {
-    stack: Vec<HashMap<String, Symbol>>,
+pub struct ScopedSymbolTable<T> {
+    stack: Vec<HashMap<String, T>>,
 }
 
-impl ScopedSymbolTable {
+impl<T> ScopedSymbolTable<T> {
     /// Create a new scoped symbol table with a global scope.
     pub fn new() -> Self {
         Self {
@@ -34,12 +34,12 @@ impl ScopedSymbolTable {
     }
 
     /// Get a symbol by name. Returns the match in the most nested scope.
-    pub fn get_symbol(&self, name: &str) -> Option<&Symbol> {
+    pub fn get_symbol(&self, name: &str) -> Option<&T> {
         self.stack.iter().rev().find_map(|map| map.get(name))
     }
 
     /// Adds a symbol to the last scope.
-    pub fn add_symbol(&mut self, name: String, value: Symbol) -> Result<(), CodegenError> {
+    pub fn add_symbol(&mut self, name: String, value: T) -> Result<(), CodegenError> {
         self.stack
             .last_mut()
             .ok_or(CodegenError::EmptySymbolTable)?

@@ -1,5 +1,3 @@
-use num_bigint::BigInt;
-
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
@@ -136,7 +134,16 @@ pub struct Literal {
 }
 
 pub enum LiteralInner {
-    Int(BigInt),
+    Int(i32),
+    UInt(u32),
+    Int8(i8),
+    Int16(i16),
+    Int32(i32),
+    Int64(i64),
+    UInt8(i8),
+    UInt16(i16),
+    UInt32(i32),
+    UInt64(i64),
     Str(String),
     Bool(bool),
 }
@@ -146,14 +153,16 @@ pub struct TypeBinding {
     pub ty: Type,
 }
 
+#[derive(Clone)]
 pub enum Type {
-    Array(Box<Type>),
+    Array(Box<Type>, usize),
     Ref(Box<Type>),
     Int,
     Int8,
     Int16,
     Int32,
     Int64,
+    UInt,
     UInt8,
     UInt16,
     UInt32,
