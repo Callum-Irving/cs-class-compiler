@@ -209,7 +209,7 @@ impl ToTyped for ast::Expr {
                 let new_items: Vec<typed_ast::Expr> =
                     items.into_iter().map(|item| item.to_typed(names)).collect();
                 typed_ast::Expr {
-                    ty: new_items[0].ty.clone(),
+                    ty: typed_ast::Type::Array(Box::new(new_items[0].ty.clone()), new_items.len()),
                     val: typed_ast::ExprInner::Array(typed_ast::ArrayExpr {
                         items: new_items,
                         len,
@@ -268,6 +268,7 @@ impl ToTyped for ast::Expr {
                 use typed_ast::Type;
                 let inner_type = match &new_name.ty {
                     Type::Array(ty, _len) => *ty.clone(),
+                    Type::Ref(ty) => *ty.clone(),
                     _ => panic!("Index into non-array type"),
                 };
                 typed_ast::Expr {
@@ -313,6 +314,10 @@ impl ToTyped for ast::Literal {
             Literal::Str(val) => typed_ast::Literal {
                 ty: typed_ast::Type::Str,
                 val: typed_ast::LiteralInner::Str(val),
+            },
+            Literal::CStr(val) => typed_ast::Literal {
+                ty: typed_ast::Type::CStr,
+                val: typed_ast::LiteralInner::CStr(val),
             },
             Literal::Bool(val) => typed_ast::Literal {
                 ty: typed_ast::Type::Bool,
@@ -382,6 +387,7 @@ impl ToTyped for ast::BinOp {
             BinOp::Divide => typed_ast::BinOp::Divide,
             BinOp::LogicalAnd => typed_ast::BinOp::LogicalAnd,
             BinOp::LogicalOr => typed_ast::BinOp::LogicalOr,
+            BinOp::Equals => typed_ast::BinOp::Equals,
         }
     }
 }
@@ -395,6 +401,7 @@ impl ToTyped for ast::UnaryOp {
             UnaryOp::Minus => typed_ast::UnaryOp::Minus,
             UnaryOp::Not => typed_ast::UnaryOp::Not,
             UnaryOp::Reference => typed_ast::UnaryOp::Reference,
+            UnaryOp::Deref => typed_ast::UnaryOp::Deref,
         }
     }
 }
@@ -421,6 +428,7 @@ impl ToTyped for ast::Type {
             Type::Bool => typed_ast::Type::Bool,
             Type::Char => typed_ast::Type::Char,
             Type::Str => typed_ast::Type::Str,
+            Type::CStr => typed_ast::Type::CStr,
             Type::Int => typed_ast::Type::Int,
             Type::Int8 => typed_ast::Type::Int8,
             Type::Int16 => typed_ast::Type::Int16,

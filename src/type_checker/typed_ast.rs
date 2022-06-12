@@ -118,10 +118,12 @@ pub enum BinOp {
     Divide,
     LogicalAnd,
     LogicalOr,
+    Equals,
 }
 
 pub enum UnaryOp {
     Reference,
+    Deref,
     Minus,
     Not,
 }
@@ -140,11 +142,12 @@ pub enum LiteralInner {
     Int16(i16),
     Int32(i32),
     Int64(i64),
-    UInt8(i8),
-    UInt16(i16),
-    UInt32(i32),
-    UInt64(i64),
+    UInt8(u8),
+    UInt16(u16),
+    UInt32(u32),
+    UInt64(u64),
     Str(String),
+    CStr(String),
     Bool(bool),
 }
 
@@ -169,6 +172,7 @@ pub enum Type {
     UInt64,
     Char,
     Str,
+    CStr,
     Bool,
     NoneType,
 }

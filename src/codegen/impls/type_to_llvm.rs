@@ -24,7 +24,8 @@ impl Type {
                 let inner_type = inner.as_llvm_type(context);
                 LLVMPointerType(inner_type, 0)
             }
-            Type::Str => {
+            Type::Str => todo!("Write a string struct"),
+            Type::CStr => {
                 let i8_type = LLVMInt8TypeInContext(context);
                 LLVMPointerType(i8_type, 0)
             }

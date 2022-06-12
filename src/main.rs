@@ -40,7 +40,7 @@ fn main() {
     let tokens = Token::lexer(&src).spanned().map(Token::to_lalr_triple);
     let ast = match grammar::ProgramParser::new().parse(tokens) {
         Err(e) => {
-            eprintln!("ERROR: {:?}", e);
+            eprintln!("PARSER ERROR: {:?}", e);
             exit(1);
         }
         Ok(ast) => ast,

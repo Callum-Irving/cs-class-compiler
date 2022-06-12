@@ -3,6 +3,12 @@ use std::ops::Range;
 
 #[derive(Logos, Clone, Debug, PartialEq)]
 pub enum Token<'a> {
+    #[regex(r"//[^\n\r]*", logos::skip)]
+    Comment,
+
+    #[regex(r#"c"([^"\\]|\\.)*""#, unescape_string)]
+    CStringLiteral(String),
+
     #[regex(r#""([^"\\]|\\.)*""#, unescape_string)]
     StringLiteral(String),
 
@@ -56,6 +62,9 @@ pub enum Token<'a> {
 
     #[token("str")]
     Str,
+
+    #[token("cstr")]
+    CStr,
 
     #[token("for")]
     For,
@@ -190,35 +199,35 @@ pub enum Token<'a> {
 
     // #[regex(r#"-?[0-9]+"#)]
     // IntLiteral(&'a str),
-    #[regex(r#"-?[0-9]+"#)]
-    IntLit(&'a str),
+    #[regex(r#"-?[0-9]+"#, |lex| lex.slice().parse())]
+    IntLit(i32),
 
-    #[regex(r#"[0-9]+_u"#)]
-    UIntLit(&'a str),
+    #[regex(r#"[0-9]+_u"#, parse_uint)]
+    UIntLit(u32),
 
-    #[regex(r#"-?[0-9]+_i8"#)]
-    Int8Lit(&'a str),
+    #[regex(r#"-?[0-9]+_i8"#, parse_i8)]
+    Int8Lit(i8),
 
-    #[regex(r#"-?[0-9]+_i16"#)]
-    Int16Lit(&'a str),
+    #[regex(r#"-?[0-9]+_i16"#, parse_i16)]
+    Int16Lit(i16),
 
-    #[regex(r#"-?[0-9]+_i32"#)]
-    Int32Lit(&'a str),
+    #[regex(r#"-?[0-9]+_i32"#, parse_i32)]
+    Int32Lit(i32),
 
-    #[regex(r#"-?[0-9]+_i64"#)]
-    Int64Lit(&'a str),
+    #[regex(r#"-?[0-9]+_i64"#, parse_i64)]
+    Int64Lit(i64),
 
-    #[regex(r#"[0-9]+_u8"#)]
-    UInt8Lit(&'a str),
+    #[regex(r#"[0-9]+_u8"#, parse_u8)]
+    UInt8Lit(u8),
 
-    #[regex(r#"[0-9]+_u16"#)]
-    UInt16Lit(&'a str),
+    #[regex(r#"[0-9]+_u16"#, parse_u16)]
+    UInt16Lit(u16),
 
-    #[regex(r#"[0-9]+_u32"#)]
-    UInt32Lit(&'a str),
+    #[regex(r#"[0-9]+_u32"#, parse_u32)]
+    UInt32Lit(u32),
 
-    #[regex(r#"[0-9]+_u64"#)]
-    UInt64Lit(&'a str),
+    #[regex(r#"[0-9]+_u64"#, parse_u64)]
+    UInt64Lit(u64),
 
     #[regex(r"[ \t\r\n]+", logos::skip)]
     Whitespace,
@@ -228,7 +237,10 @@ pub enum Token<'a> {
 }
 
 fn unescape_string<'a>(lex: &mut Lexer<'a, Token<'a>>) -> String {
-    let full = lex.slice();
+    let mut full = lex.slice();
+    if full.chars().nth(0) == Some('c') {
+        full = &full[1..];
+    }
     let without_quotes = &full[1..full.len() - 1];
     let s = without_quotes.to_owned();
     let mut chars = s.chars();
@@ -253,6 +265,60 @@ fn unescape_string<'a>(lex: &mut Lexer<'a, Token<'a>>) -> String {
     }
 
     res
+}
+
+fn parse_i8<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<i8, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 3];
+    slice.parse()
+}
+
+fn parse_i16<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<i16, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
+}
+
+fn parse_i32<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<i32, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
+}
+
+fn parse_i64<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<i64, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
+}
+
+fn parse_uint<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<u32, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 2];
+    slice.parse()
+}
+
+fn parse_u8<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<u8, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 3];
+    slice.parse()
+}
+
+fn parse_u16<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<u16, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
+}
+
+fn parse_u32<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<u32, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
+}
+
+fn parse_u64<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<u64, std::num::ParseIntError> {
+    let slice = lex.slice();
+    let slice = &slice[0..slice.len() - 4];
+    slice.parse()
 }
 
 impl<'a> Token<'a> {

@@ -1,3 +1,5 @@
+extern malloc(size: int) -> *int8;
+extern itoa(val: int, buf: *int8, base: int) -> *int8;
 extern write(fd: int, buf: cstr, count: int) -> int;
 extern strlen(s: cstr) -> int;
 
@@ -9,6 +11,8 @@ func println(buf: cstr) -> int {
 }
 
 func main() {
-    const hw: cstr = c"Hello, world!";
-    println(hw);
+    const buf: *int8 = malloc(5);
+    buf[0] = 65_i8;
+    buf[1] = 0_i8;
+    println(buf);
 }

@@ -14,6 +14,7 @@
 
 ## Big TODOs
 
+- [ ] Nice LALRPOP errors
 - [ ] Structs
 - [ ] Arrays
 - [ ] Type checker

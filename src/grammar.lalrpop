@@ -9,17 +9,29 @@ extern {
 
     enum lexer::Token<'input> {
         string => lexer::Token::StringLiteral(<String>),
+        cstring => lexer::Token::CStringLiteral(<String>),
 
-        int => lexer::Token::IntLit(<&'input str>),
-        uint => lexer::Token::UIntLit(<&'input str>),
-        int8 => lexer::Token::Int8Lit(<&'input str>),
-        int16 => lexer::Token::Int16Lit(<&'input str>),
-        int32 => lexer::Token::Int32Lit(<&'input str>),
-        int64 => lexer::Token::Int64Lit(<&'input str>),
-        uint8 => lexer::Token::UInt8Lit(<&'input str>),
-        uint16 => lexer::Token::UInt16Lit(<&'input str>),
-        uint32 => lexer::Token::UInt32Lit(<&'input str>),
-        uint64 => lexer::Token::UInt64Lit(<&'input str>),
+        int => lexer::Token::IntLit(<i32>),
+        uint => lexer::Token::UIntLit(<u32>),
+        int8 => lexer::Token::Int8Lit(<i8>),
+        int16 => lexer::Token::Int16Lit(<i16>),
+        int32 => lexer::Token::Int32Lit(<i32>),
+        int64 => lexer::Token::Int64Lit(<i64>),
+        uint8 => lexer::Token::UInt8Lit(<u8>),
+        uint16 => lexer::Token::UInt16Lit(<u16>),
+        uint32 => lexer::Token::UInt32Lit(<u32>),
+        uint64 => lexer::Token::UInt64Lit(<u64>),
+
+        // int => lexer::Token::IntLit(<&'input str>),
+        // uint => lexer::Token::UIntLit(<&'input str>),
+        // int8 => lexer::Token::Int8Lit(<&'input str>),
+        // int16 => lexer::Token::Int16Lit(<&'input str>),
+        // int32 => lexer::Token::Int32Lit(<&'input str>),
+        // int64 => lexer::Token::Int64Lit(<&'input str>),
+        // uint8 => lexer::Token::UInt8Lit(<&'input str>),
+        // uint16 => lexer::Token::UInt16Lit(<&'input str>),
+        // uint32 => lexer::Token::UInt32Lit(<&'input str>),
+        // uint64 => lexer::Token::UInt64Lit(<&'input str>),
 
         ident => lexer::Token::Ident(<&'input str>),
         // "\n" => lexer::Token::Newline,
@@ -73,6 +85,7 @@ extern {
         "uint64" => lexer::Token::UInt64,
         "char" => lexer::Token::Char,
         "str" => lexer::Token::Str,
+        "cstr" => lexer::Token::CStr,
     }
 }
 
@@ -132,7 +145,7 @@ TypeBinding: ast::TypeBinding =
     <n:Ident> ":" <t:Type> => ast::TypeBinding { name: n, ty: t};
 
 Type: ast::Type = {
-    "[" <inner:Type> ";" <len:int> "]" => ast::Type::Array(Box::new(inner), len.parse().unwrap()),
+    "[" <inner:Type> ";" <len:int> "]" => ast::Type::Array(Box::new(inner), len as usize),
     "*" <Type> => ast::Type::Ref(Box::new(<>)),
     "int" => ast::Type::Int,
     "int8" => ast::Type::Int8,
@@ -146,6 +159,7 @@ Type: ast::Type = {
     "uint64" => ast::Type::UInt64,
     "char" => ast::Type::Char,
     "str" => ast::Type::Str,
+    "cstr" => ast::Type::CStr,
 }
 
 pub Expr: ast::Expr = {
@@ -153,11 +167,17 @@ pub Expr: ast::Expr = {
     <AndExpr>,
 }
 
-ArrayExpr: ast::Expr = <ExprList> => {
-    let items = <>;
-    let len = items.len();
-    ast::Expr::Array(items, len)
-};
+ArrayExpr: ast::Expr = {
+    <ExprList> => {
+        let items = <>;
+        let len = items.len();
+        ast::Expr::Array(items, len)
+    },
+    <val:Expr> ";" <len:int> => {
+        let items = vec![val; len as usize];
+        ast::Expr::Array(items, len as usize)
+    },
+}
 
 ExprList: Vec<ast::Expr> = {
     <mut a:ExprList> ","  <b:Expr> => {a.push(b); a},
@@ -171,6 +191,11 @@ AndExpr: ast::Expr = {
 
 OrExpr: ast::Expr = {
     <l:OrExpr> "or" <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::LogicalOr, Box::new(r)),
+    <AssignExpr>,
+}
+
+AssignExpr: ast::Expr = {
+    <l:AssignExpr> "=" <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::Equals, Box::new(r)),
     <ArithmaticExpr>,
 }
 
@@ -244,20 +269,22 @@ Literal: ast::Literal = {
 }
 
 IntLiteral: ast::Literal = {
-    <int> => ast::Literal::Int(<>.parse().unwrap()),
-    <uint> => ast::Literal::UInt(<>.parse().unwrap()),
-    <int8> => ast::Literal::Int8(<>.parse().unwrap()),
-    <int16> => ast::Literal::Int16(<>.parse().unwrap()),
-    <int32> => ast::Literal::Int32(<>.parse().unwrap()),
-    <int64> => ast::Literal::Int64(<>.parse().unwrap()),
-    <uint8> => ast::Literal::UInt8(<>.parse().unwrap()),
-    <uint16> => ast::Literal::UInt16(<>.parse().unwrap()),
-    <uint32> => ast::Literal::UInt32(<>.parse().unwrap()),
-    <uint64> => ast::Literal::UInt64(<>.parse().unwrap()),
+    <int> => ast::Literal::Int(<>),
+    <uint> => ast::Literal::UInt(<>),
+    <int8> => ast::Literal::Int8(<>),
+    <int16> => ast::Literal::Int16(<>),
+    <int32> => ast::Literal::Int32(<>),
+    <int64> => ast::Literal::Int64(<>),
+    <uint8> => ast::Literal::UInt8(<>),
+    <uint16> => ast::Literal::UInt16(<>),
+    <uint32> => ast::Literal::UInt32(<>),
+    <uint64> => ast::Literal::UInt64(<>),
 }
 
-StringLiteral: ast::Literal =
-    <string> => ast::Literal::Str(<>);
+StringLiteral: ast::Literal = {
+    <string> => ast::Literal::Str(<>),
+    <cstring> => ast::Literal::CStr(<>),
+}
 
 BooleanLiteral: ast::Literal = {
     "true" => ast::Literal::Bool(true),
