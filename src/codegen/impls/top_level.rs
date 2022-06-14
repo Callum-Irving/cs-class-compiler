@@ -56,6 +56,8 @@ impl typed_ast::FunctionDef {
         let block = LLVMAppendBasicBlockInContext(context, func, EMPTY_NAME);
         LLVMPositionBuilderAtEnd(builder, block);
 
+        // Add function to stack
+        ctx.add_func(func);
         ctx.symbols.push_scope();
 
         // Add arguments to current scope
@@ -73,6 +75,7 @@ impl typed_ast::FunctionDef {
         }
 
         ctx.symbols.pop_scope().unwrap();
+        ctx.pop_func();
 
         // Add ret void if it is a void function so that LLVM is happy.
         if matches!(self.return_type, typed_ast::Type::NoneType) {

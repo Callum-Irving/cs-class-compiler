@@ -20,6 +20,9 @@ impl typed_ast::Stmt {
             Stmt::ExprStmt(expr) => {
                 expr.codegen(ctx, llvm_context, module, builder);
             }
+            Stmt::BlockStmt(block) => {
+                block.codegen(ctx, llvm_context, module, builder);
+            }
             Stmt::ConstDef(def) => {
                 let alloca = LLVMBuildAlloca(
                     builder,
@@ -58,7 +61,103 @@ impl typed_ast::Stmt {
                 let value = expr.codegen(ctx, llvm_context, module, builder);
                 LLVMBuildRet(builder, value);
             }
+            Stmt::IfStmt(if_stmt) => {
+                if_stmt.codegen(ctx, llvm_context, module, builder);
+            }
+            Stmt::WhileStmt(while_stmt) => {
+                while_stmt.codegen(ctx, llvm_context, module, builder);
+            }
             _ => todo!("not implemented for stmt"),
         }
+    }
+}
+
+impl typed_ast::BlockStmt {
+    pub unsafe fn codegen(
+        &self,
+        ctx: &mut CompilerContext,
+        llvm_context: *mut llvm_sys::LLVMContext,
+        module: *mut llvm_sys::LLVMModule,
+        builder: *mut llvm_sys::LLVMBuilder,
+    ) {
+        for stmt in self.inners.iter() {
+            stmt.codegen(ctx, llvm_context, module, builder);
+        }
+    }
+}
+
+impl typed_ast::IfStmt {
+    pub unsafe fn codegen(
+        &self,
+        ctx: &mut CompilerContext,
+        llvm_context: *mut llvm_sys::LLVMContext,
+        module: *mut llvm_sys::LLVMModule,
+        builder: *mut llvm_sys::LLVMBuilder,
+    ) {
+        let cond = self.condition.codegen(ctx, llvm_context, module, builder);
+
+        let if_block = LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+        let else_block =
+            LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+        let final_block =
+            LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+
+        LLVMBuildCondBr(builder, cond, if_block, else_block);
+
+        // Gen if block
+        LLVMPositionBuilderAtEnd(builder, if_block);
+        self.body.codegen(ctx, llvm_context, module, builder);
+        LLVMBuildBr(builder, final_block);
+
+        // Gen else block
+        LLVMPositionBuilderAtEnd(builder, else_block);
+        if let Some(if_or_else) = self.else_stmt.clone() {
+            use typed_ast::IfOrElse;
+            match if_or_else {
+                IfOrElse::If(if_stmt) => {
+                    if_stmt.codegen(ctx, llvm_context, module, builder);
+                }
+                IfOrElse::Else(block) => {
+                    block.codegen(ctx, llvm_context, module, builder);
+                }
+            }
+        }
+
+        LLVMBuildBr(builder, final_block);
+
+        LLVMPositionBuilderAtEnd(builder, final_block);
+    }
+}
+
+impl typed_ast::WhileStmt {
+    pub unsafe fn codegen(
+        &self,
+        ctx: &mut CompilerContext,
+        llvm_context: *mut llvm_sys::LLVMContext,
+        module: *mut llvm_sys::LLVMModule,
+        builder: *mut llvm_sys::LLVMBuilder,
+    ) {
+        let condition_block =
+            LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+        let body_block =
+            LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+        let final_block =
+            LLVMAppendBasicBlockInContext(llvm_context, ctx.current_func(), EMPTY_NAME);
+        LLVMBuildBr(builder, condition_block);
+
+        // Conditional break
+        LLVMPositionBuilderAtEnd(builder, condition_block);
+        let condition = self.condition.codegen(ctx, llvm_context, module, builder);
+        // If condition == 1 then go to body block, else go to final block
+        LLVMBuildCondBr(builder, condition, body_block, final_block);
+
+        // Body block
+        LLVMPositionBuilderAtEnd(builder, body_block);
+        self.body.codegen(ctx, llvm_context, module, builder);
+        // Go back to condition check
+        LLVMBuildBr(builder, condition_block);
+
+        // Exit
+        LLVMPositionBuilderAtEnd(builder, final_block);
     }
 }

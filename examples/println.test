@@ -9,6 +9,13 @@ func println(buf: cstr) -> int {
 }
 
 func main() {
-    const hw: cstr = c"Hello, world!";
-    println(hw);
+    const hw: cstr = c"Hello, wo";
+    const ret_val: int = println(hw);
+    if (ret_val > 10) {
+        println(c"Big");
+    } else if (ret_val > 8) {
+        println(c"mid");
+    } else {
+        println(c"Small");
+    }
 }

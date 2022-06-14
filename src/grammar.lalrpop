@@ -48,6 +48,7 @@ extern {
         "," => lexer::Token::Comma,
 
         "if" => lexer::Token::If,
+        "else" => lexer::Token::Else,
         "true" => lexer::Token::True,
         "false" => lexer::Token::False,
         "and" => lexer::Token::And,
@@ -64,6 +65,14 @@ extern {
         ":" => lexer::Token::Colon,
         ";" => lexer::Token::Semicolon,
         "=" => lexer::Token::Equals,
+
+        // Comparison
+        ">" => lexer::Token::Gt,
+        ">=" => lexer::Token::Gte,
+        "<" => lexer::Token::Lt,
+        "<=" => lexer::Token::Lte,
+        "==" => lexer::Token::IsEqual,
+        "!=" => lexer::Token::NotEqual,
 
         // Math
         "+" => lexer::Token::Plus,
@@ -117,7 +126,7 @@ pub Stmt: ast::Stmt = {
     "return" <Expr> ";" => ast::Stmt::ReturnStmt(<>),
     <Expr> ";" => ast::Stmt::ExprStmt(<>),
     <BlockStmt> => ast::Stmt::BlockStmt(<>),
-    <IfStmt>,
+    <IfStmt> => ast::Stmt::IfStmt(<>),
     <WhileStmt>,
     <ConstDef> => ast::Stmt::ConstDef(<>),
     <VarDef> => ast::Stmt::VarDef(<>),
@@ -126,8 +135,15 @@ pub Stmt: ast::Stmt = {
 BlockStmt: ast::BlockStmt =
     "{" <Stmt*> "}" => ast::BlockStmt(<>);
 
-IfStmt: ast::Stmt =
-    "if" "(" <condition:Expr> ")" <body:BlockStmt> => ast::Stmt::IfStmt(ast::IfStmt {<>});
+IfStmt: ast::IfStmt =
+    "if" "(" <condition:Expr> ")" <body:BlockStmt> <else_stmt:IfOrElse?> => {
+        ast::IfStmt {<>}
+    };
+
+IfOrElse: ast::IfOrElse = {
+    "else" <IfStmt> => ast::IfOrElse::If(Box::new(<>)),
+    "else" <BlockStmt> => ast::IfOrElse::Else(<>),
+}
 
 WhileStmt: ast::Stmt =
     "while" "(" <condition:Expr> ")" <body:BlockStmt> => ast::Stmt::WhileStmt(ast::WhileStmt {<>});
@@ -195,7 +211,12 @@ OrExpr: ast::Expr = {
 }
 
 AssignExpr: ast::Expr = {
-    <l:AssignExpr> "=" <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::Equals, Box::new(r)),
+    <l:AssignExpr> "=" <r:CompareExpr> => ast::Expr::Binary(Box::new(l), ast::BinOp::Equals, Box::new(r)),
+    <CompareExpr>,
+}
+
+CompareExpr: ast::Expr = {
+    <l:CompareExpr> <op:CompareOp> <r:ArithmaticExpr> => ast::Expr::Binary(Box::new(l), op, Box::new(r)),
     <ArithmaticExpr>,
 }
 
@@ -244,6 +265,15 @@ PrimaryExpr: ast::Expr = {
     <StringLiteral> => ast::Expr::Literal(<>),
     <BooleanLiteral> => ast::Expr::Literal(<>),
     "(" <Expr> ")",
+}
+
+CompareOp: ast::BinOp = {
+    ">" => ast::BinOp::Gt,
+    ">=" => ast::BinOp::Gte,
+    "<" => ast::BinOp::Lt,
+    "<=" => ast::BinOp::Lte,
+    "==" => ast::BinOp::Eq,
+    "!=" => ast::BinOp::Ne,
 }
 
 AddOp: ast::BinOp = {

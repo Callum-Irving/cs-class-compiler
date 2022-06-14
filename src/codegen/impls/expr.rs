@@ -94,6 +94,48 @@ impl typed_ast::Expr {
                         let l_ptr = binary_expr.lhs.codegen_ptr(ctx, context, module, builder);
                         LLVMBuildStore(builder, r_val, l_ptr)
                     }
+                    BinOp::Eq => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntEQ,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
+                    BinOp::Ne => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntNE,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
+                    BinOp::Gt => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntSGT,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
+                    BinOp::Gte => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntSGE,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
+                    BinOp::Lt => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntSLT,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
+                    BinOp::Lte => LLVMBuildICmp(
+                        builder,
+                        llvm_sys::LLVMIntPredicate::LLVMIntSLE,
+                        l_val,
+                        r_val,
+                        EMPTY_NAME,
+                    ),
                 }
             }
             ExprInner::Unary(unary_expr) => {

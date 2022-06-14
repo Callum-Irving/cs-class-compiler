@@ -28,6 +28,7 @@ pub struct GlobalConstDef {
 
 // STATEMENTS
 
+#[derive(Clone)]
 pub enum Stmt {
     ExprStmt(Expr),
     BlockStmt(BlockStmt),
@@ -38,25 +39,37 @@ pub enum Stmt {
     ReturnStmt(Expr),
 }
 
+#[derive(Clone)]
 pub struct BlockStmt {
     pub inners: Vec<Stmt>,
 }
 
+#[derive(Clone)]
 pub struct IfStmt {
     pub condition: Expr,
     pub body: BlockStmt,
+    pub else_stmt: Option<IfOrElse>,
 }
 
+#[derive(Clone)]
+pub enum IfOrElse {
+    If(Box<IfStmt>),
+    Else(BlockStmt),
+}
+
+#[derive(Clone)]
 pub struct WhileStmt {
     pub condition: Expr,
     pub body: BlockStmt,
 }
 
+#[derive(Clone)]
 pub struct ConstDef {
     pub binding: TypeBinding,
     pub value: Expr,
 }
 
+#[derive(Clone)]
 pub struct VarDef {
     pub binding: TypeBinding,
     pub value: Expr,
@@ -64,11 +77,13 @@ pub struct VarDef {
 
 // EXPRESSIONS
 
+#[derive(Clone)]
 pub struct Expr {
     pub ty: Type,
     pub val: ExprInner,
 }
 
+#[derive(Clone)]
 pub enum ExprInner {
     FunctionCall(FunctionCall),
     IndexExpr(IndexExpr),
@@ -80,37 +95,44 @@ pub enum ExprInner {
     Ident(String),
 }
 
+#[derive(Clone)]
 pub struct FunctionCall {
     pub name: Box<Expr>,
     pub args: Vec<Expr>,
 }
 
+#[derive(Clone)]
 pub struct IndexExpr {
     pub name: Box<Expr>,
     pub index: Box<Expr>,
 }
 
+#[derive(Clone)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub rhs: Box<Expr>,
     pub op: BinOp,
 }
 
+#[derive(Clone)]
 pub struct UnaryExpr {
     pub data: Box<Expr>,
     pub op: UnaryOp,
 }
 
+#[derive(Clone)]
 pub struct ArrayExpr {
     pub items: Vec<Expr>,
     pub len: usize,
 }
 
+#[derive(Clone)]
 pub struct CastExpr {
     pub original: Box<Expr>,
     pub to_type: Type,
 }
 
+#[derive(Clone)]
 pub enum BinOp {
     Plus,
     Minus,
@@ -119,8 +141,15 @@ pub enum BinOp {
     LogicalAnd,
     LogicalOr,
     Equals,
+    Eq,
+    Ne,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
 }
 
+#[derive(Clone)]
 pub enum UnaryOp {
     Reference,
     Deref,
@@ -130,11 +159,13 @@ pub enum UnaryOp {
 
 // LITERALS
 
+#[derive(Clone)]
 pub struct Literal {
     pub ty: Type,
     pub val: LiteralInner,
 }
 
+#[derive(Clone)]
 pub enum LiteralInner {
     Int(i32),
     UInt(u32),
@@ -151,6 +182,7 @@ pub enum LiteralInner {
     Bool(bool),
 }
 
+#[derive(Clone)]
 pub struct TypeBinding {
     pub name: String,
     pub ty: Type,

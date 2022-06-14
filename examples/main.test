@@ -1,9 +1,26 @@
-const CONSTINT: uint = 354;
+extern write(fd: int, buf: cstr, count: int) -> int;
+extern read(fd: int, buf: *int8, count: uint) -> int;
+extern calloc(len: int, size: int) -> *int8;
+extern strlen(s: cstr) -> int;
 
-extern read(fd: int, buf: [char], count: uint) -> int;
+func read_line(buf: *int8, size: int) {
+    read(0, buf, size);
+}
 
-func main() -> int {
-    println("Hello, world!");
+func println(buf: *int8, size: int) {
+    const len: int = strlen(buf);
+    write(1, buf, len);
+}
 
-    done();
+func main() {
+    var size: int = 20;
+    var buf: *int8 = calloc(size, 1);
+    read_line(buf, size);
+    println(buf, size);
+
+    var size: int = 0;
+    while (size < 10) {
+        println(c"Iter\n", 5);
+        size = size + 1;
+    }
 }

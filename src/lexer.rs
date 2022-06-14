@@ -96,6 +96,9 @@ pub enum Token<'a> {
     #[token("if")]
     If,
 
+    #[token("else")]
+    Else,
+
     #[token("while")]
     While,
 

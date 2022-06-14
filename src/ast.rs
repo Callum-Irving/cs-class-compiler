@@ -44,6 +44,13 @@ pub struct BlockStmt(pub Vec<Stmt>);
 pub struct IfStmt {
     pub condition: Expr,
     pub body: BlockStmt,
+    pub else_stmt: Option<IfOrElse>,
+}
+
+#[derive(Debug)]
+pub enum IfOrElse {
+    If(Box<IfStmt>),
+    Else(BlockStmt),
 }
 
 #[derive(Debug)]
@@ -101,6 +108,12 @@ pub enum BinOp {
     LogicalAnd,
     LogicalOr,
     Equals,
+    Eq,
+    Ne,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
 }
 
 #[derive(Debug, Clone)]

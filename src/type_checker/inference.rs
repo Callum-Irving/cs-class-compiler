@@ -151,6 +151,20 @@ impl ToTyped for ast::IfStmt {
         typed_ast::IfStmt {
             condition: self.condition.to_typed(names),
             body: self.body.to_typed(names),
+            else_stmt: self.else_stmt.map(|e| e.to_typed(names)),
+        }
+    }
+}
+
+impl ToTyped for ast::IfOrElse {
+    type Typed = typed_ast::IfOrElse;
+
+    fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
+        match self {
+            ast::IfOrElse::If(if_stmt) => {
+                typed_ast::IfOrElse::If(Box::new(if_stmt.to_typed(names)))
+            }
+            ast::IfOrElse::Else(block) => typed_ast::IfOrElse::Else(block.to_typed(names)),
         }
     }
 }
@@ -388,6 +402,12 @@ impl ToTyped for ast::BinOp {
             BinOp::LogicalAnd => typed_ast::BinOp::LogicalAnd,
             BinOp::LogicalOr => typed_ast::BinOp::LogicalOr,
             BinOp::Equals => typed_ast::BinOp::Equals,
+            BinOp::Eq => typed_ast::BinOp::Eq,
+            BinOp::Ne => typed_ast::BinOp::Ne,
+            BinOp::Gt => typed_ast::BinOp::Gt,
+            BinOp::Gte => typed_ast::BinOp::Gte,
+            BinOp::Lt => typed_ast::BinOp::Lt,
+            BinOp::Lte => typed_ast::BinOp::Lte,
         }
     }
 }

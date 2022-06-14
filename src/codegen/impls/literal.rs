@@ -41,14 +41,26 @@ impl typed_ast::Literal {
                 let i1_type = LLVMInt1TypeInContext(context);
                 LLVMConstInt(i1_type, *val as c_ulonglong, 0)
             }
-            LiteralInner::UInt(val) => panic!("HOW)"),
+            LiteralInner::UInt(val) => {
+                let uint_type = LLVMInt32TypeInContext(context);
+                LLVMConstInt(uint_type, *val as c_ulonglong, 0)
+            }
             LiteralInner::Int8(val) => {
                 let ty = self.ty.as_llvm_type(context);
                 LLVMConstInt(ty, *val as c_ulonglong, 1)
             }
-            LiteralInner::Int16(val) => panic!("HOW"),
-            LiteralInner::Int32(val) => panic!("HOW"),
-            LiteralInner::Int64(val) => panic!("HOW"),
+            LiteralInner::Int16(val) => {
+                let i16_type = LLVMInt16TypeInContext(context);
+                LLVMConstInt(i16_type, *val as c_ulonglong, 1)
+            }
+            LiteralInner::Int32(val) => {
+                let i32_type = LLVMInt32TypeInContext(context);
+                LLVMConstInt(i32_type, *val as c_ulonglong, 1)
+            }
+            LiteralInner::Int64(val) => {
+                let i64_type = LLVMInt64TypeInContext(context);
+                LLVMConstInt(i64_type, *val as c_ulonglong, 1)
+            }
             LiteralInner::UInt8(val) => panic!("HOW"),
             LiteralInner::UInt16(val) => panic!("HOW"),
             LiteralInner::UInt32(val) => panic!("HOW"),

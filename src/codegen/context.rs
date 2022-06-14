@@ -5,10 +5,12 @@ use crate::type_checker::inference::infer_types_pass;
 
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
+use llvm_sys::prelude::LLVMValueRef;
 use llvm_sys::{LLVMBuilder, LLVMContext, LLVMModule};
 
 pub struct CompilerContext {
     pub symbols: ScopedSymbolTable<Symbol>,
+    func_stack: Vec<LLVMValueRef>,
     context: *mut LLVMContext,
     module: *mut LLVMModule,
     builder: *mut LLVMBuilder,
@@ -24,6 +26,7 @@ impl CompilerContext {
 
             Self {
                 symbols: ScopedSymbolTable::new(),
+                func_stack: vec![],
                 context,
                 module,
                 builder,
@@ -40,6 +43,18 @@ impl CompilerContext {
         let name = CString::new(output_file).unwrap();
         LLVMPrintModuleToFile(self.module, c_str!("main.ll"), std::ptr::null_mut());
         LLVMWriteBitcodeToFile(self.module, name.as_ptr() as *const i8);
+    }
+
+    pub fn add_func(&mut self, func: LLVMValueRef) {
+        self.func_stack.push(func);
+    }
+
+    pub fn pop_func(&mut self) {
+        self.func_stack.pop();
+    }
+
+    pub fn current_func(&self) -> LLVMValueRef {
+        *self.func_stack.last().unwrap()
     }
 }
 
