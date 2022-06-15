@@ -28,12 +28,21 @@ impl ToTyped for ast::TopLevelStmt {
         use ast::TopLevelStmt;
 
         match self {
+            TopLevelStmt::ClassDef(def) => typed_ast::TopLevelStmt::ClassDef(def.to_typed(names)),
             TopLevelStmt::FunctionDef(def) => {
                 typed_ast::TopLevelStmt::FunctionDef(def.to_typed(names))
             }
             TopLevelStmt::ExternDef(def) => typed_ast::TopLevelStmt::ExternDef(def.to_typed(names)),
             TopLevelStmt::ConstDef(def) => typed_ast::TopLevelStmt::ConstDef(def.to_typed(names)),
         }
+    }
+}
+
+impl ToTyped for ast::ClassDef {
+    type Typed = typed_ast::ClassDef;
+
+    fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
+        todo!();
     }
 }
 
@@ -443,6 +452,7 @@ impl ToTyped for ast::Type {
     fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
         use ast::Type;
         match self {
+            Type::Class(name) => typed_ast::Type::Class(name),
             Type::Array(inner, len) => typed_ast::Type::Array(Box::new(inner.to_typed(names)), len),
             Type::Ref(inner) => typed_ast::Type::Ref(Box::new(inner.to_typed(names))),
             Type::Bool => typed_ast::Type::Bool,

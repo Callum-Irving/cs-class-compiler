@@ -12,6 +12,9 @@ pub enum Token<'a> {
     #[regex(r#""([^"\\]|\\.)*""#, unescape_string)]
     StringLiteral(String),
 
+    #[token("class")]
+    Class,
+
     #[token("func")]
     Func,
 

@@ -2,6 +2,7 @@ use super::symbol::{ScopedSymbolTable, Symbol};
 use crate::ast::Program;
 use crate::c_str;
 use crate::type_checker::inference::infer_types_pass;
+use crate::type_checker::typed_ast::ClassDef;
 
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
@@ -10,6 +11,7 @@ use llvm_sys::{LLVMBuilder, LLVMContext, LLVMModule};
 
 pub struct CompilerContext {
     pub symbols: ScopedSymbolTable<Symbol>,
+    classes: Vec<ClassDef>,
     func_stack: Vec<LLVMValueRef>,
     context: *mut LLVMContext,
     module: *mut LLVMModule,
@@ -26,6 +28,7 @@ impl CompilerContext {
 
             Self {
                 symbols: ScopedSymbolTable::new(),
+                classes: vec![],
                 func_stack: vec![],
                 context,
                 module,
@@ -55,6 +58,14 @@ impl CompilerContext {
 
     pub fn current_func(&self) -> LLVMValueRef {
         *self.func_stack.last().unwrap()
+    }
+
+    pub fn add_class(&mut self, class: ClassDef) {
+        self.classes.push(class);
+    }
+
+    pub fn class(&self, name: &str) -> Option<&ClassDef> {
+        self.classes.iter().find(|c| c.name == name)
     }
 }
 

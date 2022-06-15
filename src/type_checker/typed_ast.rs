@@ -1,9 +1,17 @@
+use std::collections::HashMap;
+
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
+    ClassDef(ClassDef),
     FunctionDef(FunctionDef),
     ExternDef(ExternDef),
     ConstDef(GlobalConstDef),
+}
+
+pub struct ClassDef {
+    pub name: String,
+    pub fields: HashMap<String, Type>,
 }
 
 // TOP LEVEL STATEMENTS
@@ -190,6 +198,7 @@ pub struct TypeBinding {
 
 #[derive(Clone)]
 pub enum Type {
+    Class(String),
     Array(Box<Type>, usize),
     Ref(Box<Type>),
     Int,

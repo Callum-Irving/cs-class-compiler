@@ -9,7 +9,7 @@ use llvm_sys::core::*;
 impl typed_ast::Literal {
     pub unsafe fn codegen(
         &self,
-        _ctx: &mut CompilerContext,
+        ctx: &mut CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
@@ -20,7 +20,7 @@ impl typed_ast::Literal {
             // TODO: This is dependent on context (fixed)
             LiteralInner::Int(value) => {
                 // Default to int32 type
-                let ty = self.ty.as_llvm_type(context);
+                let ty = self.ty.as_llvm_type(ctx, context);
 
                 // TODO: use better conversion method
                 // TODO: Handle error
@@ -46,8 +46,8 @@ impl typed_ast::Literal {
                 LLVMConstInt(uint_type, *val as c_ulonglong, 0)
             }
             LiteralInner::Int8(val) => {
-                let ty = self.ty.as_llvm_type(context);
-                LLVMConstInt(ty, *val as c_ulonglong, 1)
+                let i8_type = LLVMInt8TypeInContext(context);
+                LLVMConstInt(i8_type, *val as c_ulonglong, 1)
             }
             LiteralInner::Int16(val) => {
                 let i16_type = LLVMInt16TypeInContext(context);

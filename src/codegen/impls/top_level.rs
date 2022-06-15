@@ -21,11 +21,24 @@ impl typed_ast::Program {
             use typed_ast::TopLevelStmt;
 
             match stmt {
+                TopLevelStmt::ClassDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::FunctionDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::ExternDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::ConstDef(def) => def.codegen(ctx, context, module, builder),
             };
         }
+    }
+}
+
+impl typed_ast::ClassDef {
+    pub unsafe fn codegen(
+        &self,
+        ctx: &mut CompilerContext,
+        context: *mut llvm_sys::LLVMContext,
+        module: *mut llvm_sys::LLVMModule,
+        builder: *mut llvm_sys::LLVMBuilder,
+    ) {
+        todo!();
     }
 }
 
@@ -41,10 +54,10 @@ impl typed_ast::FunctionDef {
         let mut args: Vec<LLVMTypeRef> = self
             .params
             .iter()
-            .map(|t| t.ty.as_llvm_type(context))
+            .map(|t| t.ty.as_llvm_type(ctx, context))
             .collect();
 
-        let return_type = self.return_type.as_llvm_type(context);
+        let return_type = self.return_type.as_llvm_type(ctx, context);
 
         let func_type = LLVMFunctionType(return_type, args.as_mut_ptr(), args.len() as c_uint, 0);
 
@@ -62,7 +75,7 @@ impl typed_ast::FunctionDef {
 
         // Add arguments to current scope
         for (i, param) in self.params.iter().enumerate() {
-            let alloca = LLVMBuildAlloca(builder, param.ty.as_llvm_type(context), EMPTY_NAME);
+            let alloca = LLVMBuildAlloca(builder, param.ty.as_llvm_type(ctx, context), EMPTY_NAME);
             let value = LLVMGetParam(func, i as u32);
             LLVMBuildStore(builder, value, alloca);
             ctx.symbols
@@ -100,10 +113,10 @@ impl typed_ast::ExternDef {
         let mut args: Vec<LLVMTypeRef> = self
             .params
             .iter()
-            .map(|t| t.ty.as_llvm_type(context))
+            .map(|t| t.ty.as_llvm_type(ctx, context))
             .collect();
 
-        let return_type = self.return_type.as_llvm_type(context);
+        let return_type = self.return_type.as_llvm_type(ctx, context);
 
         let func_type = LLVMFunctionType(
             return_type,

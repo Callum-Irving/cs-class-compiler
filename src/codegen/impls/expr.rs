@@ -22,7 +22,7 @@ impl typed_ast::Expr {
         match &self.val {
             ExprInner::Array(array_expr) => {
                 let i64_type = LLVMInt64TypeInContext(context);
-                let ty = self.ty.as_llvm_type(context);
+                let ty = self.ty.as_llvm_type(ctx, context);
                 let alloca = LLVMBuildAlloca(builder, ty, EMPTY_NAME);
                 let zero = LLVMConstInt(i64_type, 0, 0);
                 // TODO: Can optimize this
@@ -155,7 +155,7 @@ impl typed_ast::Expr {
                 builder,
                 llvm_sys::LLVMOpcode::LLVMSExt,
                 cast_expr.original.codegen(ctx, context, module, builder),
-                cast_expr.to_type.as_llvm_type(context),
+                cast_expr.to_type.as_llvm_type(ctx, context),
                 EMPTY_NAME,
             ),
             ExprInner::Literal(lit) => lit.codegen(ctx, context, module, builder),

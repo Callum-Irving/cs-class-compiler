@@ -26,7 +26,7 @@ impl typed_ast::Stmt {
             Stmt::ConstDef(def) => {
                 let alloca = LLVMBuildAlloca(
                     builder,
-                    def.binding.ty.as_llvm_type(llvm_context),
+                    def.binding.ty.as_llvm_type(ctx, llvm_context),
                     EMPTY_NAME,
                 );
                 let val = def.value.codegen(ctx, llvm_context, module, builder);
@@ -43,7 +43,7 @@ impl typed_ast::Stmt {
             Stmt::VarDef(def) => {
                 let alloca = LLVMBuildAlloca(
                     builder,
-                    def.binding.ty.as_llvm_type(llvm_context),
+                    def.binding.ty.as_llvm_type(ctx, llvm_context),
                     EMPTY_NAME,
                 );
                 let val = def.value.codegen(ctx, llvm_context, module, builder);

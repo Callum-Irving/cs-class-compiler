@@ -43,6 +43,7 @@ extern {
         "func" => lexer::Token::Func,
         "extern" => lexer::Token::Extern,
         "return" => lexer::Token::Return,
+        "class" => lexer::Token::Class,
 
         "&" => lexer::Token::Ampersand,
         "," => lexer::Token::Comma,
@@ -101,10 +102,15 @@ extern {
 pub Program: ast::Program = <TopLevelStmt*> => ast::Program(<>);
 
 TopLevelStmt: ast::TopLevelStmt = {
+    <ClassDef> => ast::TopLevelStmt::ClassDef(<>),
     <FunctionDef> => ast::TopLevelStmt::FunctionDef(<>),
     <GlobalConstDef> => ast::TopLevelStmt::ConstDef(<>),
     <ExternDef> => ast::TopLevelStmt::ExternDef(<>),
 }
+
+ClassDef: ast::ClassDef = {
+
+};
 
 pub FunctionDef: ast::FunctionDef = "func" <name:Ident> "(" <params:MaybeParamsList> ")" <return_type:("->" <Type>)?> <body:BlockStmt> => ast::FunctionDef {<>};
 
