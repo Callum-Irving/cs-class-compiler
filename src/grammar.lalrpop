@@ -108,9 +108,20 @@ TopLevelStmt: ast::TopLevelStmt = {
     <ExternDef> => ast::TopLevelStmt::ExternDef(<>),
 }
 
-ClassDef: ast::ClassDef = {
+ClassDef: ast::ClassDef =
+    "class" <name:Ident> "{" <f:MaybeParamsList> "}" => {
+        use std::collections::HashMap;
+        // Convert vec to hashmap
+        let mut fields: HashMap<String, ast::Type> = HashMap::new();
+        f.into_iter().for_each(|b| {
+            fields.insert(b.name, b.ty);
+        });
 
-};
+        ast::ClassDef {
+            name,
+            fields,
+        }
+    };
 
 pub FunctionDef: ast::FunctionDef = "func" <name:Ident> "(" <params:MaybeParamsList> ")" <return_type:("->" <Type>)?> <body:BlockStmt> => ast::FunctionDef {<>};
 
@@ -182,12 +193,29 @@ Type: ast::Type = {
     "char" => ast::Type::Char,
     "str" => ast::Type::Str,
     "cstr" => ast::Type::CStr,
+    <Ident> => ast::Type::Class(<>),
 }
 
 pub Expr: ast::Expr = {
     "[" <ArrayExpr> "]",
+    <ClassExpr>,
     <AndExpr>,
 }
+
+ClassExpr: ast::Expr =
+    <class:Ident> "{" <fields:MaybeFieldList> "}" => {
+        ast::Expr::Class(ast::ClassExpr {<>})
+    };
+
+MaybeFieldList: Vec<(String, Box<ast::Expr>)> = <FieldList?> => <>.unwrap_or(vec![]);
+
+FieldList: Vec<(String, Box<ast::Expr>)> = {
+    <mut a:FieldList> ","  <b:Field> => {a.push(b); a},
+    <Field> => vec![<>],
+}
+
+Field: (String, Box<ast::Expr>) =
+    <name:Ident> ":" <e:Expr> => (name, Box::new(e));
 
 ArrayExpr: ast::Expr = {
     <ExprList> => {

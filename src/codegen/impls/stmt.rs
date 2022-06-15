@@ -67,7 +67,6 @@ impl typed_ast::Stmt {
             Stmt::WhileStmt(while_stmt) => {
                 while_stmt.codegen(ctx, llvm_context, module, builder);
             }
-            _ => todo!("not implemented for stmt"),
         }
     }
 }

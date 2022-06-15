@@ -20,6 +20,18 @@ impl typed_ast::Expr {
         use typed_ast::ExprInner;
 
         match &self.val {
+            ExprInner::Class(class_expr) => {
+                let (llvm_ty, _def) = ctx.class(&class_expr.class).unwrap();
+                let alloca = LLVMBuildAlloca(builder, *llvm_ty, EMPTY_NAME);
+
+                // TODO: Map names to value indicies instead of doing by order
+                for (i, (_, value)) in class_expr.fields.iter().enumerate() {
+                    let field = LLVMBuildStructGEP(builder, alloca, i as c_uint, EMPTY_NAME);
+                    LLVMBuildStore(builder, value.codegen(ctx, context, module, builder), field);
+                }
+
+                LLVMBuildLoad(builder, alloca, EMPTY_NAME)
+            }
             ExprInner::Array(array_expr) => {
                 let i64_type = LLVMInt64TypeInContext(context);
                 let ty = self.ty.as_llvm_type(ctx, context);

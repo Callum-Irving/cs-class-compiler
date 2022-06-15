@@ -1,0 +1,8 @@
+class TestClass {
+    name: cstr,
+    age: uint
+}
+
+func main() {
+    var test: TestClass = TestClass { age: 10_u, name: c"Test Class" };
+}

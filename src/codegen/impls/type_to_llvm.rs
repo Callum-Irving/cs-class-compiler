@@ -16,7 +16,8 @@ impl Type {
         match self {
             // TODO: Make system dependent?
             Type::Class(name) => {
-                todo!();
+                // TODO: Don't unwrap
+                ctx.class(name).unwrap().0
             }
             Type::Int | Type::UInt => LLVMInt32TypeInContext(llvm_context),
             Type::Int8 | Type::UInt8 | Type::Char => LLVMInt8TypeInContext(llvm_context),

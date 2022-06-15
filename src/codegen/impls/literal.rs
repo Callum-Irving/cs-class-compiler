@@ -61,11 +61,23 @@ impl typed_ast::Literal {
                 let i64_type = LLVMInt64TypeInContext(context);
                 LLVMConstInt(i64_type, *val as c_ulonglong, 1)
             }
-            LiteralInner::UInt8(val) => panic!("HOW"),
-            LiteralInner::UInt16(val) => panic!("HOW"),
-            LiteralInner::UInt32(val) => panic!("HOW"),
-            LiteralInner::UInt64(val) => panic!("HOW"),
-            LiteralInner::Str(val) => panic!("String struct not done yet"),
+            LiteralInner::UInt8(val) => {
+                let u8_type = LLVMInt8TypeInContext(context);
+                LLVMConstInt(u8_type, *val as c_ulonglong, 0)
+            }
+            LiteralInner::UInt16(val) => {
+                let u16_type = LLVMInt16TypeInContext(context);
+                LLVMConstInt(u16_type, *val as c_ulonglong, 0)
+            }
+            LiteralInner::UInt32(val) => {
+                let u32_type = LLVMInt32TypeInContext(context);
+                LLVMConstInt(u32_type, *val as c_ulonglong, 0)
+            }
+            LiteralInner::UInt64(val) => {
+                let u64_type = LLVMInt64TypeInContext(context);
+                LLVMConstInt(u64_type, *val as c_ulonglong, 0)
+            }
+            LiteralInner::Str(_val) => todo!("String struct not done yet"),
         }
     }
 }

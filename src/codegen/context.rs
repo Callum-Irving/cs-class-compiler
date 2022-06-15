@@ -4,14 +4,16 @@ use crate::c_str;
 use crate::type_checker::inference::infer_types_pass;
 use crate::type_checker::typed_ast::ClassDef;
 
+use std::collections::HashMap;
+
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
-use llvm_sys::prelude::LLVMValueRef;
+use llvm_sys::prelude::{LLVMTypeRef, LLVMValueRef};
 use llvm_sys::{LLVMBuilder, LLVMContext, LLVMModule};
 
 pub struct CompilerContext {
     pub symbols: ScopedSymbolTable<Symbol>,
-    classes: Vec<ClassDef>,
+    classes: HashMap<String, (LLVMTypeRef, ClassDef)>,
     func_stack: Vec<LLVMValueRef>,
     context: *mut LLVMContext,
     module: *mut LLVMModule,
@@ -28,7 +30,7 @@ impl CompilerContext {
 
             Self {
                 symbols: ScopedSymbolTable::new(),
-                classes: vec![],
+                classes: HashMap::new(),
                 func_stack: vec![],
                 context,
                 module,
@@ -60,12 +62,12 @@ impl CompilerContext {
         *self.func_stack.last().unwrap()
     }
 
-    pub fn add_class(&mut self, class: ClassDef) {
-        self.classes.push(class);
+    pub fn add_class(&mut self, ty: LLVMTypeRef, class: ClassDef) {
+        self.classes.insert(class.name.clone(), (ty, class));
     }
 
-    pub fn class(&self, name: &str) -> Option<&ClassDef> {
-        self.classes.iter().find(|c| c.name == name)
+    pub fn class(&self, name: &str) -> Option<&(LLVMTypeRef, ClassDef)> {
+        self.classes.get(name)
     }
 }
 

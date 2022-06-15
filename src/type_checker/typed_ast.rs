@@ -9,6 +9,7 @@ pub enum TopLevelStmt {
     ConstDef(GlobalConstDef),
 }
 
+#[derive(Clone)]
 pub struct ClassDef {
     pub name: String,
     pub fields: HashMap<String, Type>,
@@ -93,6 +94,7 @@ pub struct Expr {
 
 #[derive(Clone)]
 pub enum ExprInner {
+    Class(ClassExpr),
     FunctionCall(FunctionCall),
     IndexExpr(IndexExpr),
     Binary(BinaryExpr),
@@ -101,6 +103,12 @@ pub enum ExprInner {
     Cast(CastExpr),
     Literal(Literal),
     Ident(String),
+}
+
+#[derive(Clone)]
+pub struct ClassExpr {
+    pub class: String,
+    pub fields: Vec<(String, Box<Expr>)>,
 }
 
 #[derive(Clone)]

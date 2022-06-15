@@ -83,6 +83,7 @@ pub struct VarDef {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Class(ClassExpr),
     FunctionCall(FunctionCall),
     IndexExpr(Box<Expr>, Box<Expr>),
     Binary(Box<Expr>, BinOp, Box<Expr>),
@@ -91,6 +92,12 @@ pub enum Expr {
     Cast(Box<Expr>, Type),
     Literal(Literal),
     Ident(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassExpr {
+    pub class: String,
+    pub fields: Vec<(String, Box<Expr>)>,
 }
 
 #[derive(Debug, Clone)]

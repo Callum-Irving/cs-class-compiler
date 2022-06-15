@@ -42,7 +42,18 @@ impl ToTyped for ast::ClassDef {
     type Typed = typed_ast::ClassDef;
 
     fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
-        todo!();
+        let fields = self
+            .fields
+            .into_iter()
+            .map(|(name, ty)| (name, ty.to_typed(names)))
+            .collect();
+
+        names.add_symbol(self.name.clone(), typed_ast::Type::Class(self.name.clone()));
+
+        typed_ast::ClassDef {
+            name: self.name,
+            fields,
+        }
     }
 }
 
@@ -227,6 +238,20 @@ impl ToTyped for ast::Expr {
     fn to_typed(self, names: &mut ScopedSymbolTable<typed_ast::Type>) -> Self::Typed {
         use ast::Expr;
         match self {
+            Expr::Class(class_expr) => {
+                let ty = names.get_symbol(&class_expr.class).unwrap().clone();
+                typed_ast::Expr {
+                    ty,
+                    val: typed_ast::ExprInner::Class(typed_ast::ClassExpr {
+                        class: class_expr.class,
+                        fields: class_expr
+                            .fields
+                            .into_iter()
+                            .map(|(name, e)| (name, Box::new(e.to_typed(names))))
+                            .collect(),
+                    }),
+                }
+            }
             Expr::Array(items, len) => {
                 // TODO: Make sure items all have same type
                 let new_items: Vec<typed_ast::Expr> =

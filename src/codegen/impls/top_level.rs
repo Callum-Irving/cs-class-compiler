@@ -4,6 +4,7 @@ use crate::type_checker::typed_ast;
 
 use crate::codegen::symbol::{Symbol, SymbolType};
 
+use std::ffi::CStr;
 use std::os::raw::c_uint;
 
 use llvm_sys::core::*;
@@ -34,11 +35,26 @@ impl typed_ast::ClassDef {
     pub unsafe fn codegen(
         &self,
         ctx: &mut CompilerContext,
-        context: *mut llvm_sys::LLVMContext,
-        module: *mut llvm_sys::LLVMModule,
-        builder: *mut llvm_sys::LLVMBuilder,
+        llvm_context: *mut llvm_sys::LLVMContext,
+        _module: *mut llvm_sys::LLVMModule,
+        _builder: *mut llvm_sys::LLVMBuilder,
     ) {
-        todo!();
+        use std::ffi::CString;
+        let c_name = CString::new(self.name.as_bytes()).unwrap();
+        let struct_ty = LLVMStructCreateNamed(llvm_context, c_name.as_ptr() as *const i8);
+        let mut element_types: Vec<LLVMTypeRef> = self
+            .fields
+            .iter()
+            .map(|(_, ty)| ty.as_llvm_type(ctx, llvm_context))
+            .collect();
+        LLVMStructSetBody(
+            struct_ty,
+            element_types.as_mut_ptr(),
+            element_types.len() as u32,
+            0,
+        );
+
+        ctx.add_class(struct_ty, self.clone());
     }
 }
 
