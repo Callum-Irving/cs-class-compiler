@@ -9,7 +9,7 @@ use llvm_sys::core::*;
 impl typed_ast::Literal {
     pub unsafe fn codegen(
         &self,
-        ctx: &mut CompilerContext,
+        ctx: &CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,

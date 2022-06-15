@@ -112,9 +112,9 @@ ClassDef: ast::ClassDef =
     "class" <name:Ident> "{" <f:MaybeParamsList> "}" => {
         use std::collections::HashMap;
         // Convert vec to hashmap
-        let mut fields: HashMap<String, ast::Type> = HashMap::new();
-        f.into_iter().for_each(|b| {
-            fields.insert(b.name, b.ty);
+        let mut fields: HashMap<String, (usize, ast::Type)> = HashMap::new();
+        f.into_iter().enumerate().for_each(|(i, b)| {
+            fields.insert(b.name, (i, b.ty));
         });
 
         ast::ClassDef {

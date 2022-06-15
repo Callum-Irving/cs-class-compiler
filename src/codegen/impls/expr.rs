@@ -12,7 +12,7 @@ use llvm_sys::prelude::LLVMValueRef;
 impl typed_ast::Expr {
     pub unsafe fn codegen(
         &self,
-        ctx: &mut CompilerContext,
+        ctx: &CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
@@ -21,11 +21,12 @@ impl typed_ast::Expr {
 
         match &self.val {
             ExprInner::Class(class_expr) => {
-                let (llvm_ty, _def) = ctx.class(&class_expr.class).unwrap();
+                let (llvm_ty, def) = ctx.class(&class_expr.class).unwrap();
                 let alloca = LLVMBuildAlloca(builder, *llvm_ty, EMPTY_NAME);
 
-                // TODO: Map names to value indicies instead of doing by order
-                for (i, (_, value)) in class_expr.fields.iter().enumerate() {
+                // TODO: Get rid of this unwrap
+                for (name, value) in class_expr.fields.iter() {
+                    let i = def.fields.get(name).unwrap().0;
                     let field = LLVMBuildStructGEP(builder, alloca, i as c_uint, EMPTY_NAME);
                     LLVMBuildStore(builder, value.codegen(ctx, context, module, builder), field);
                 }
@@ -185,7 +186,7 @@ impl typed_ast::Expr {
 
     pub unsafe fn codegen_ptr(
         &self,
-        ctx: &mut CompilerContext,
+        ctx: &CompilerContext,
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,

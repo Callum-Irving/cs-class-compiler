@@ -45,7 +45,7 @@ impl ToTyped for ast::ClassDef {
         let fields = self
             .fields
             .into_iter()
-            .map(|(name, ty)| (name, ty.to_typed(names)))
+            .map(|(name, (i, ty))| (name, (i, ty.to_typed(names))))
             .collect();
 
         names.add_symbol(self.name.clone(), typed_ast::Type::Class(self.name.clone()));

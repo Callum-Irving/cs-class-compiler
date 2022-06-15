@@ -10,7 +10,7 @@ use llvm_sys::LLVMContext;
 impl Type {
     pub unsafe fn as_llvm_type(
         &self,
-        ctx: &mut CompilerContext,
+        ctx: &CompilerContext,
         llvm_context: *mut LLVMContext,
     ) -> LLVMTypeRef {
         match self {

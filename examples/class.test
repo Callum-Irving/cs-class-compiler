@@ -4,5 +4,5 @@ class TestClass {
 }
 
 func main() {
-    var test: TestClass = TestClass { age: 10_u, name: c"Test Class" };
+    var test: TestClass = TestClass { name: c"Test Class", age: 10_u };
 }

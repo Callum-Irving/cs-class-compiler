@@ -12,7 +12,7 @@ pub enum TopLevelStmt {
 #[derive(Clone)]
 pub struct ClassDef {
     pub name: String,
-    pub fields: HashMap<String, Type>,
+    pub fields: HashMap<String, (usize, Type)>,
 }
 
 // TOP LEVEL STATEMENTS
