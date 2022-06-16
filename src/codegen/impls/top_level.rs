@@ -1,10 +1,10 @@
 use super::EMPTY_NAME;
 use crate::codegen::context::CompilerContext;
+use crate::codegen::error::CodegenError;
 use crate::type_checker::typed_ast;
 
 use crate::codegen::symbol::{Symbol, SymbolType};
 
-use std::ffi::CStr;
 use std::os::raw::c_uint;
 
 use llvm_sys::core::*;
@@ -17,7 +17,7 @@ impl typed_ast::Program {
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) {
+    ) -> Result<(), CodegenError> {
         for stmt in self.0.iter() {
             use typed_ast::TopLevelStmt;
 
@@ -26,8 +26,10 @@ impl typed_ast::Program {
                 TopLevelStmt::FunctionDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::ExternDef(def) => def.codegen(ctx, context, module, builder),
                 TopLevelStmt::ConstDef(def) => def.codegen(ctx, context, module, builder),
-            };
+            }?;
         }
+
+        Ok(())
     }
 }
 
@@ -38,7 +40,7 @@ impl typed_ast::ClassDef {
         llvm_context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
-    ) {
+    ) -> Result<(), CodegenError> {
         use std::ffi::CString;
         let c_name = CString::new(self.name.as_bytes()).unwrap();
         let struct_ty = LLVMStructCreateNamed(llvm_context, c_name.as_ptr() as *const i8);
@@ -55,6 +57,8 @@ impl typed_ast::ClassDef {
         );
 
         ctx.add_class(struct_ty, self.clone());
+
+        Ok(())
     }
 }
 
@@ -65,7 +69,7 @@ impl typed_ast::FunctionDef {
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) {
+    ) -> Result<(), CodegenError> {
         // Turn args into vec of llvm types
         let mut args: Vec<LLVMTypeRef> = self
             .params
@@ -100,7 +104,7 @@ impl typed_ast::FunctionDef {
         }
 
         for stmt in self.body.inners.iter() {
-            stmt.codegen(ctx, context, module, builder);
+            stmt.codegen(ctx, context, module, builder)?;
         }
 
         ctx.symbols.pop_scope().unwrap();
@@ -115,6 +119,8 @@ impl typed_ast::FunctionDef {
         ctx.symbols
             .add_symbol(self.name.clone(), Symbol::new(func, SymbolType::Func))
             .unwrap();
+
+        Ok(())
     }
 }
 
@@ -125,7 +131,7 @@ impl typed_ast::ExternDef {
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
-    ) {
+    ) -> Result<(), CodegenError> {
         let mut args: Vec<LLVMTypeRef> = self
             .params
             .iter()
@@ -149,6 +155,8 @@ impl typed_ast::ExternDef {
         ctx.symbols
             .add_symbol(self.name.clone(), Symbol::new(func, SymbolType::Func))
             .unwrap();
+
+        Ok(())
     }
 }
 
@@ -159,7 +167,7 @@ impl typed_ast::GlobalConstDef {
         _context: *mut llvm_sys::LLVMContext,
         _module: *mut llvm_sys::LLVMModule,
         _builder: *mut llvm_sys::LLVMBuilder,
-    ) {
+    ) -> Result<(), CodegenError> {
         todo!();
     }
 }

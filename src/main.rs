@@ -59,11 +59,11 @@ fn main() {
     info!("compiling parsed program to llvm bitcode");
     let mut compiler = CompilerContext::new();
     unsafe {
-        compiler.compile_to_file(ast, "output.bc");
+        compiler.compile_to_file(ast, "output.bc").unwrap();
     }
 
     // Use clang to compile LLVM Bitcode to native binary
-    info!("running clang on the generated bicode");
+    info!("running clang on the generated bitcode");
     Command::new("clang")
         .arg("output.bc")
         .stdout(std::process::Stdio::null())

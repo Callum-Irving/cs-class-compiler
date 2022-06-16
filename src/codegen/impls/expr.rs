@@ -1,5 +1,6 @@
 use super::EMPTY_NAME;
 use crate::codegen::context::CompilerContext;
+use crate::codegen::error::CodegenError;
 use crate::type_checker::typed_ast;
 
 use crate::codegen::symbol::SymbolType;
@@ -16,10 +17,10 @@ impl typed_ast::Expr {
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) -> llvm_sys::prelude::LLVMValueRef {
+    ) -> Result<llvm_sys::prelude::LLVMValueRef, CodegenError> {
         use typed_ast::ExprInner;
 
-        match &self.val {
+        let val = match &self.val {
             ExprInner::Class(class_expr) => {
                 let (llvm_ty, def) = ctx.class(&class_expr.class).unwrap();
                 let alloca = LLVMBuildAlloca(builder, *llvm_ty, EMPTY_NAME);
@@ -28,7 +29,11 @@ impl typed_ast::Expr {
                 for (name, value) in class_expr.fields.iter() {
                     let i = def.fields.iter().position(|(n, _)| n == name).unwrap();
                     let field = LLVMBuildStructGEP(builder, alloca, i as c_uint, EMPTY_NAME);
-                    LLVMBuildStore(builder, value.codegen(ctx, context, module, builder), field);
+                    LLVMBuildStore(
+                        builder,
+                        value.codegen(ctx, context, module, builder)?,
+                        field,
+                    );
                 }
 
                 LLVMBuildLoad(builder, alloca, EMPTY_NAME)
@@ -41,7 +46,7 @@ impl typed_ast::Expr {
                 // TODO: Can optimize this
                 // Look how clang does it by chaining GEP instructions
                 for (i, item) in array_expr.items.iter().enumerate() {
-                    let value = item.codegen(ctx, context, module, builder);
+                    let value = item.codegen(ctx, context, module, builder)?;
                     let index = LLVMConstInt(i64_type, i as c_ulonglong, 0);
                     let array_val = LLVMBuildInBoundsGEP2(
                         builder,
@@ -57,20 +62,20 @@ impl typed_ast::Expr {
             }
             ExprInner::IndexExpr(index_expr) => {
                 // Use getelementptr instruction
-                let data = index_expr.name.codegen(ctx, context, module, builder);
-                let index = index_expr.index.codegen(ctx, context, module, builder);
+                let data = index_expr.name.codegen(ctx, context, module, builder)?;
+                let index = index_expr.index.codegen(ctx, context, module, builder)?;
 
                 let ptr = LLVMBuildGEP(builder, data, [index].as_mut_ptr(), 1, EMPTY_NAME);
                 LLVMBuildLoad(builder, ptr, EMPTY_NAME)
             }
             ExprInner::FunctionCall(call) => {
-                let func = call.name.codegen(ctx, context, module, builder);
+                let func = call.name.codegen(ctx, context, module, builder)?;
                 // TODO: Handle error better
                 let mut args: Vec<LLVMValueRef> = call
                     .args
                     .iter()
                     .map(|expr| expr.codegen(ctx, context, module, builder))
-                    .collect();
+                    .collect::<Result<Vec<LLVMValueRef>, CodegenError>>()?;
 
                 LLVMBuildCall(
                     builder,
@@ -83,8 +88,8 @@ impl typed_ast::Expr {
             ExprInner::Binary(binary_expr) => {
                 use typed_ast::BinOp;
 
-                let l_val = binary_expr.lhs.codegen(ctx, context, module, builder);
-                let r_val = binary_expr.rhs.codegen(ctx, context, module, builder);
+                let l_val = binary_expr.lhs.codegen(ctx, context, module, builder)?;
+                let r_val = binary_expr.rhs.codegen(ctx, context, module, builder)?;
 
                 // TODO: This assumes l and r are both signed ints
                 // should have handling for unsigned and floats as well
@@ -104,7 +109,7 @@ impl typed_ast::Expr {
                         // Build store
                         // TODO: Somehow don't fully codegen l val because we want the ptr to it
                         // We know that l val has to be bound to some variable for this to work
-                        let l_ptr = binary_expr.lhs.codegen_ptr(ctx, context, module, builder);
+                        let l_ptr = binary_expr.lhs.codegen_ptr(ctx, context, module, builder)?;
                         LLVMBuildStore(builder, r_val, l_ptr)
                     }
                     BinOp::Eq => LLVMBuildICmp(
@@ -152,12 +157,12 @@ impl typed_ast::Expr {
                 }
             }
             ExprInner::Unary(unary_expr) => {
-                let data_val = unary_expr.data.codegen(ctx, context, module, builder);
+                let data_val = unary_expr.data.codegen(ctx, context, module, builder)?;
 
                 use typed_ast::UnaryOp;
                 match unary_expr.op {
                     UnaryOp::Reference => {
-                        unary_expr.data.codegen_ptr(ctx, context, module, builder)
+                        unary_expr.data.codegen_ptr(ctx, context, module, builder)?
                     }
                     UnaryOp::Deref => LLVMBuildLoad(builder, data_val, EMPTY_NAME),
                     UnaryOp::Minus => LLVMBuildNeg(builder, data_val, EMPTY_NAME),
@@ -167,7 +172,7 @@ impl typed_ast::Expr {
             ExprInner::Cast(cast_expr) => LLVMBuildCast(
                 builder,
                 llvm_sys::LLVMOpcode::LLVMSExt,
-                cast_expr.original.codegen(ctx, context, module, builder),
+                cast_expr.original.codegen(ctx, context, module, builder)?,
                 cast_expr.to_type.as_llvm_type(ctx, context),
                 EMPTY_NAME,
             ),
@@ -181,7 +186,9 @@ impl typed_ast::Expr {
                     SymbolType::Func => symbol.value,
                 }
             }
-        }
+        };
+
+        Ok(val)
     }
 
     pub unsafe fn codegen_ptr(
@@ -190,22 +197,30 @@ impl typed_ast::Expr {
         context: *mut llvm_sys::LLVMContext,
         module: *mut llvm_sys::LLVMModule,
         builder: *mut llvm_sys::LLVMBuilder,
-    ) -> llvm_sys::prelude::LLVMValueRef {
+    ) -> Result<llvm_sys::prelude::LLVMValueRef, CodegenError> {
         use typed_ast::ExprInner;
+        // TODO: Replace panics with nice errors
         if let ExprInner::Ident(ident) = &self.val {
             let symbol = ctx.symbols.get_symbol(&ident).unwrap();
-            symbol.value
+            Ok(symbol.value)
         } else if let ExprInner::IndexExpr(index_expr) = &self.val {
-            let data = index_expr.name.codegen(ctx, context, module, builder);
-            let index = index_expr.index.codegen(ctx, context, module, builder);
-            LLVMBuildGEP(builder, data, [index].as_mut_ptr(), 1, EMPTY_NAME)
+            let data = index_expr.name.codegen(ctx, context, module, builder)?;
+            let index = index_expr.index.codegen(ctx, context, module, builder)?;
+            Ok(LLVMBuildGEP(
+                builder,
+                data,
+                [index].as_mut_ptr(),
+                1,
+                EMPTY_NAME,
+            ))
         } else if let ExprInner::Unary(unary_expr) = &self.val {
-            // TODO: assert op is deref
-            // %3 = i32**
-            // need i32*
-            self.codegen(ctx, context, module, builder)
+            if unary_expr.op == typed_ast::UnaryOp::Reference {
+                self.codegen(ctx, context, module, builder)
+            } else {
+                Err(CodegenError::BadPtrGen)
+            }
         } else {
-            panic!("OH NO, bad ptr expr")
+            Err(CodegenError::BadPtrGen)
         }
     }
 }

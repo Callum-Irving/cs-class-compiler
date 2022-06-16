@@ -48,7 +48,9 @@ impl ToTyped for ast::ClassDef {
             .map(|(name, ty)| (name, ty.to_typed(names)))
             .collect();
 
-        names.add_symbol(self.name.clone(), typed_ast::Type::Class(self.name.clone()));
+        names
+            .add_symbol(self.name.clone(), typed_ast::Type::Class(self.name.clone()))
+            .unwrap();
 
         typed_ast::ClassDef {
             name: self.name,

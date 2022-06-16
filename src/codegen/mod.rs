@@ -1,4 +1,5 @@
 pub mod context;
+pub mod error;
 mod impls;
 pub mod symbol;
 

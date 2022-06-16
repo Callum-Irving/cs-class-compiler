@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {

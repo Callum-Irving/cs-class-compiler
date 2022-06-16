@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub struct Program(pub Vec<TopLevelStmt>);
 
 pub enum TopLevelStmt {
@@ -165,7 +163,7 @@ pub enum BinOp {
     Lte,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum UnaryOp {
     Reference,
     Deref,

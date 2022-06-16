@@ -8,7 +8,6 @@
 
 ## Big TODOs
 
-- [ ] Loops
 - [ ] Structs (used-defined types)
 - [ ] Type checker
 - [ ] Module system
@@ -17,6 +16,7 @@
 - [ ] Standard library
     - [ ] Vectors
     - [ ] Better string
+- [x] Loops
 - [x] If / else if / else chaining
 - [x] Arrays
 - [x] Parse escape strings

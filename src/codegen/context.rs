@@ -1,6 +1,7 @@
 use super::symbol::{ScopedSymbolTable, Symbol};
 use crate::ast::Program;
 use crate::c_str;
+use crate::codegen::error::CodegenError;
 use crate::type_checker::inference::infer_types_pass;
 use crate::type_checker::typed_ast::ClassDef;
 
@@ -39,15 +40,21 @@ impl CompilerContext {
         }
     }
 
-    pub unsafe fn compile_to_file(&mut self, ast: Program, output_file: &str) {
+    pub unsafe fn compile_to_file(
+        &mut self,
+        ast: Program,
+        output_file: &str,
+    ) -> Result<(), CodegenError> {
         let ast = infer_types_pass(ast);
 
-        ast.codegen(self, self.context, self.module, self.builder);
+        ast.codegen(self, self.context, self.module, self.builder)?;
 
         use std::ffi::CString;
         let name = CString::new(output_file).unwrap();
         LLVMPrintModuleToFile(self.module, c_str!("main.ll"), std::ptr::null_mut());
         LLVMWriteBitcodeToFile(self.module, name.as_ptr() as *const i8);
+
+        Ok(())
     }
 
     pub fn add_func(&mut self, func: LLVMValueRef) {

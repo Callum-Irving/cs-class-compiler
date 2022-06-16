@@ -1,10 +1,19 @@
-extern write(fd: int, buf: str, count: int) -> int;
+extern write(fd: int, buf: cstr, count: int) -> int;
+extern strlen(s: cstr) -> int;
+
+func println(buf: cstr) -> int {
+    const len: int = strlen(buf);
+    const written: int = write(1, buf, len);
+    write(1, c"\n", 1);
+    return written;
+}
 
 func main() {
-    var test: str = "5
-";
-
-    var test2: uint = -11;
-
-    write(1, test, 2);
+    const s: cstr = c"y";
+    const len: int = strlen(s);
+    if (len >= 2) {
+        println(c"Callum is not cool");
+    } else {
+        println(c"callums coding language sucks");
+    }
 }
