@@ -1,8 +1,7 @@
 use super::symbol::{ScopedSymbolTable, Symbol};
-use crate::ast::Program;
 use crate::c_str;
 use crate::codegen::error::CodegenError;
-use crate::type_checker::inference::infer_types_pass;
+use crate::type_checker::typed_ast;
 use crate::type_checker::typed_ast::ClassDef;
 
 use std::collections::HashMap;
@@ -42,11 +41,9 @@ impl CompilerContext {
 
     pub unsafe fn compile_to_file(
         &mut self,
-        ast: Program,
+        ast: typed_ast::Program,
         output_file: &str,
     ) -> Result<(), CodegenError> {
-        let ast = infer_types_pass(ast);
-
         ast.codegen(self, self.context, self.module, self.builder)?;
 
         use std::ffi::CString;

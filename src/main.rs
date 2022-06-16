@@ -55,6 +55,9 @@ fn main() {
         Ok(ast) => ast,
     };
 
+    info!("inferring types for ast");
+    let ast = type_checker::inference::infer_types_pass(ast).unwrap();
+
     // Compile to LLVM Bitcode
     info!("compiling parsed program to llvm bitcode");
     let mut compiler = CompilerContext::new();

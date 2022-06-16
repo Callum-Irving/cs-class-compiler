@@ -1,9 +1,9 @@
 use crate::codegen::symbol::ScopedSymbolTable;
 
-use super::typed_ast;
+use super::{error::TypeCheckerError, typed_ast};
 use crate::ast;
 
-pub fn infer_types_pass(program: ast::Program) -> typed_ast::Program {
+pub fn infer_types_pass(program: ast::Program) -> Result<typed_ast::Program, TypeCheckerError> {
     let mut new_program = typed_ast::Program(vec![]);
 
     let mut names: ScopedSymbolTable<typed_ast::Type> = ScopedSymbolTable::new();
@@ -12,7 +12,7 @@ pub fn infer_types_pass(program: ast::Program) -> typed_ast::Program {
         new_program.0.push(stmt.to_typed(&mut names));
     }
 
-    new_program
+    Ok(new_program)
 }
 
 trait ToTyped {
