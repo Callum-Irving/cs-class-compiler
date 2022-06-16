@@ -11,7 +11,7 @@ pub enum TopLevelStmt {
 
 pub struct ClassDef {
     pub name: String,
-    pub fields: HashMap<String, (usize, Type)>,
+    pub fields: Vec<(String, Type)>,
 }
 
 pub struct FunctionDef {

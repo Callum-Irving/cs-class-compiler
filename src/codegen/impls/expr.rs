@@ -26,7 +26,7 @@ impl typed_ast::Expr {
 
                 // TODO: Get rid of this unwrap
                 for (name, value) in class_expr.fields.iter() {
-                    let i = def.fields.get(name).unwrap().0;
+                    let i = def.fields.iter().position(|(n, _)| n == name).unwrap();
                     let field = LLVMBuildStructGEP(builder, alloca, i as c_uint, EMPTY_NAME);
                     LLVMBuildStore(builder, value.codegen(ctx, context, module, builder), field);
                 }

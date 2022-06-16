@@ -45,7 +45,7 @@ impl typed_ast::ClassDef {
         let mut element_types: Vec<LLVMTypeRef> = self
             .fields
             .iter()
-            .map(|(_, (_, ty))| ty.as_llvm_type(ctx, llvm_context))
+            .map(|(_, ty)| ty.as_llvm_type(ctx, llvm_context))
             .collect();
         LLVMStructSetBody(
             struct_ty,

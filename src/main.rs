@@ -7,10 +7,11 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::process::{exit, Command};
 
-use clap::Parser;
-
 use codegen::context::CompilerContext;
 use lexer::Token;
+
+use clap::Parser;
+use log::info;
 use logos::Logos;
 
 use lalrpop_util::lalrpop_mod;
@@ -22,10 +23,15 @@ struct CliArgs {
 }
 
 fn main() {
+    // Initialize logger
+    env_logger::init();
+
     // Parse command line args
+    info!("parsing command line arguments");
     let args = CliArgs::parse();
 
-    // Open source file
+    // Open source file and read to a string
+    info!("reading source file: {}", args.src.display());
     let mut file = match std::fs::File::open(args.src) {
         Err(e) => {
             eprintln!("ERROR: {}", e);
@@ -37,7 +43,10 @@ fn main() {
     file.read_to_string(&mut src).unwrap();
 
     // Tokenize and parse file
+    info!("tokenizing source file");
     let tokens = Token::lexer(&src).spanned().map(Token::to_lalr_triple);
+
+    info!("parsing tokenized file");
     let ast = match grammar::ProgramParser::new().parse(tokens) {
         Err(e) => {
             eprintln!("PARSER ERROR: {:?}", e);
@@ -47,12 +56,14 @@ fn main() {
     };
 
     // Compile to LLVM Bitcode
+    info!("compiling parsed program to llvm bitcode");
     let mut compiler = CompilerContext::new();
     unsafe {
         compiler.compile_to_file(ast, "output.bc");
     }
 
     // Use clang to compile LLVM Bitcode to native binary
+    info!("running clang on the generated bicode");
     Command::new("clang")
         .arg("output.bc")
         .stdout(std::process::Stdio::null())
